@@ -1,82 +1,41 @@
-import 'dart:convert';
+// Importa el paquete material de Flutter, que provee componentes de interfaz gráfica.
 import 'package:flutter/material.dart';
-import 'package:web_socket_channel/io.dart';
-import 'package:web_socket_channel/web_socket_channel.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+// Importa la pantalla principal de la aplicación.
+import 'screens/home_screen.dart';
+import 'blocs/crypto_bloc.dart';
+import 'services/crypto_service.dart';
+import 'services/websocket_prices_service.dart';
 
-void main() {
-  runApp(const MyApp());
-}
+// Función principal de la aplicación, el punto de entrada.
+// Ejecuta la aplicación pasando el widget MyApp.
+void main() => runApp(MyApp());
 
+/// Widget principal de la aplicación, de tipo StatelessWidget.
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
+
+  // Método build que construye la interfaz de usuario del widget.
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Crypto Tickers',
-      theme: ThemeData(primarySwatch: Colors.blue),
-      home: const TickerScreen(),
-    );
-  }
-}
-
-class TickerScreen extends StatefulWidget {
-  const TickerScreen({super.key});
-  @override
-  State<TickerScreen> createState() => _TickerScreenState();
-}
-
-class _TickerScreenState extends State<TickerScreen> {
-  late final WebSocketChannel channel;
-
-  @override
-  void initState() {
-    super.initState();
-    // Conectamos al websocket que envía todos los tickers
-    channel = IOWebSocketChannel.connect(
-      Uri.parse('wss://stream.binance.com:9443/ws/!ticker@arr'),
-    );
-  }
-
-  @override
-  void dispose() {
-    channel.sink.close();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Ticker de Criptomonedas'),
+    return BlocProvider(
+      // Proporciona el BLoC de criptomonedas al árbol completo de la aplicación
+      create: (_) => CryptoBloc(
+        cryptoService: CryptoService(),
+        pricesService: WebSocketPricesService(),
       ),
-      body: StreamBuilder(
-        stream: channel.stream,
-        builder: (context, snapshot) {
-          if (snapshot.hasError) {
-            return Center(child: Text('Error: ${snapshot.error}'));
-          }
-          if (!snapshot.hasData) {
-            return const Center(child: CircularProgressIndicator());
-          }
-
-          // Decodificamos el mensaje JSON recibido (que es un arreglo)
-          final List<dynamic> tickers = jsonDecode(snapshot.data);
-          // Ordenamos por símbolo para facilitar la lectura (opcional)
-          tickers.sort((a, b) => (a['s'] as String).compareTo(b['s'] as String));
-
-          return ListView.builder(
-            itemCount: tickers.length,
-            itemBuilder: (context, index) {
-              final ticker = tickers[index];
-              final String symbol = ticker['s'] ?? 'N/A';
-              final String price = ticker['c'] ?? 'N/A'; // "c" es el precio actual
-              return ListTile(
-                title: Text(symbol),
-                subtitle: Text('Precio: \$ $price'),
-              );
-            },
-          );
-        },
+      child: MaterialApp(
+        // Título de la aplicación, utilizado en algunos contextos del sistema.
+        title: 'CoinCap API 2.0 Demo',
+        // Configuración del tema visual de la aplicación.
+        theme: ThemeData(
+          // Define una paleta de colores basada en un color semilla.
+          colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
+          // Activa el uso de Material Design 3.
+          useMaterial3: true,
+        ),
+        // Define la pantalla principal que se muestra al iniciar la aplicación.
+        home: HomeScreen(),
       ),
     );
   }
