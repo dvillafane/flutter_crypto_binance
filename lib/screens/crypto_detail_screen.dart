@@ -16,8 +16,10 @@ class CryptoDetailScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocProvider(
       // Crea una instancia del BLoC y carga los detalles de la criptomoneda al iniciarse.
-      create: (context) => CryptoDetailBloc(detailService: CryptoDetailService())
-        ..add(LoadCryptoDetail(assetId: assetId)),
+      create:
+          (context) =>
+              CryptoDetailBloc(detailService: CryptoDetailService())
+                ..add(LoadCryptoDetail(assetId: assetId)),
       child: Scaffold(
         // Fondo de la pantalla en color negro.
         backgroundColor: Colors.black,
@@ -26,7 +28,7 @@ class CryptoDetailScreen extends StatelessWidget {
             // Muestra un indicador de carga mientras se obtienen los datos.
             if (state is CryptoDetailLoading) {
               return const Center(child: CircularProgressIndicator());
-            } 
+            }
             // Muestra los detalles de la criptomoneda cuando los datos se han cargado correctamente.
             else if (state is CryptoDetailLoaded) {
               final detail = state.detail;
@@ -34,8 +36,10 @@ class CryptoDetailScreen extends StatelessWidget {
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.all(16.0), // Espaciado interno.
                   child: Column(
-                    mainAxisSize: MainAxisSize.min, // Ocupa solo el espacio necesario.
-                    crossAxisAlignment: CrossAxisAlignment.center, // Centra los elementos.
+                    mainAxisSize:
+                        MainAxisSize.min, // Ocupa solo el espacio necesario.
+                    crossAxisAlignment:
+                        CrossAxisAlignment.center, // Centra los elementos.
                     children: [
                       // Muestra el nombre de la criptomoneda con un estilo destacado.
                       Text(
@@ -51,34 +55,40 @@ class CryptoDetailScreen extends StatelessWidget {
                       // Muestra el logo de la criptomoneda usando una URL.
                       Image.network(detail.logoUrl, width: 100, height: 100),
                       const SizedBox(height: 16), // Espaciado adicional.
-
                       // Tarjeta que contiene los detalles de la criptomoneda.
                       Card(
-                        color: Colors.grey[900], // Color de fondo de la tarjeta.
+                        color:
+                            Colors.grey[900], // Color de fondo de la tarjeta.
                         margin: const EdgeInsets.symmetric(vertical: 8),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(20), // Bordes redondeados.
+                          borderRadius: BorderRadius.circular(
+                            20,
+                          ), // Bordes redondeados.
                         ),
                         child: Padding(
-                          padding: const EdgeInsets.all(16.0), // Margen interno de la tarjeta.
+                          padding: const EdgeInsets.all(
+                            16.0,
+                          ), // Margen interno de la tarjeta.
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               // Fila que muestra el símbolo de la criptomoneda.
-                              _buildInfoRow('Símbolo', detail.symbol, LucideIcons.hash),
-                              // Fila que muestra el ranking de la criptomoneda.
-                              _buildInfoRow('Rank', detail.rank.toString(), LucideIcons.star),
-                              // Fila que muestra el suministro circulante.
-                              _buildInfoRow('Suministro', detail.supply.toString(), LucideIcons.database),
-                              // Fila que muestra el suministro máximo si está disponible.
-                              if (detail.maxSupply != null)
-                                _buildInfoRow('Suministro Máximo', detail.maxSupply.toString(), LucideIcons.layers),
-                              // Fila que muestra la capitalización de mercado.
-                              _buildInfoRow('Market Cap', '\$${detail.marketCapUsd.toStringAsFixed(2)}', LucideIcons.dollarSign),
-                              // Fila que muestra el volumen de transacciones en las últimas 24 horas.
-                              _buildInfoRow('Volumen 24h', '\$${detail.volumeUsd24Hr.toStringAsFixed(2)}', LucideIcons.pieChart),
+                              _buildInfoRow(
+                                'Símbolo',
+                                detail.symbol,
+                                LucideIcons.hash,
+                              ), // Muestra "BTC" en lugar de "BTCUSDT"
+                              _buildInfoRow(
+                                'Volumen 24h',
+                                '\$${detail.volumeUsd24Hr.toStringAsFixed(2)}',
+                                LucideIcons.pieChart,
+                              ),
                               // Fila que muestra el precio actual de la criptomoneda.
-                              _buildInfoRow('Precio', '\$${detail.priceUsd.toStringAsFixed(2)}', LucideIcons.trendingUp),
+                              _buildInfoRow(
+                                'Precio',
+                                '\$${detail.priceUsd.toStringAsFixed(2)}',
+                                LucideIcons.trendingUp,
+                              ),
                             ],
                           ),
                         ),
@@ -87,7 +97,7 @@ class CryptoDetailScreen extends StatelessWidget {
                   ),
                 ),
               );
-            } 
+            }
             // Muestra un mensaje de error si hay algún problema al cargar los detalles.
             else if (state is CryptoDetailError) {
               return Center(
@@ -108,7 +118,9 @@ class CryptoDetailScreen extends StatelessWidget {
   /// Método que construye una fila de información con un ícono, una etiqueta y un valor.
   Widget _buildInfoRow(String label, String value, IconData icon) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4.0), // Espaciado vertical entre filas.
+      padding: const EdgeInsets.symmetric(
+        vertical: 4.0,
+      ), // Espaciado vertical entre filas.
       child: Row(
         children: [
           // Ícono representativo del dato mostrado.
@@ -130,7 +142,7 @@ class CryptoDetailScreen extends StatelessWidget {
             child: Text(
               value,
               style: const TextStyle(fontSize: 16, color: Colors.white70),
-              overflow: TextOverflow.ellipsis, // Maneja el desbordamiento del texto.
+              overflow: TextOverflow.ellipsis,
             ),
           ),
         ],
