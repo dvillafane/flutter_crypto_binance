@@ -150,50 +150,62 @@ class CryptoBloc extends Bloc<CryptoEvent, CryptoState> {
   }
 
   /// Método que maneja el evento de actualización de precios en tiempo real
-  void _onPricesUpdated(PricesUpdated event, Emitter<CryptoState> emit) {
-    final currentState = state;
+void _onPricesUpdated(PricesUpdated event, Emitter<CryptoState> emit) {
+  // Se obtiene el estado actual del bloc
+  final currentState = state;
 
-    // Verificar que el estado actual sea el de criptomonedas cargadas
-    if (currentState is CryptoLoaded) {
-      // Mapa temporal para almacenar los colores actualizados
-      final Map<String, Color> updatedColors = {};
+  // Se verifica que el estado actual sea del tipo CryptoLoaded
+  if (currentState is CryptoLoaded) {
+    // Mapa que almacenará el color actualizado para cada criptomoneda basado en el cambio de precio
+    final Map<String, Color> updatedColors = {};
 
-      // Actualizar los precios y colores de cada criptomoneda
-      final List<Crypto> updatedCryptos = currentState.cryptos.map((crypto) {
-        final double oldPrice = _previousPrices[crypto.id] ?? crypto.price;
-        final double newPrice = event.prices[crypto.id] ?? crypto.price;
+    // Se crea una lista de criptomonedas actualizadas mapeando cada una del estado actual
+    final List<Crypto> updatedCryptos = currentState.cryptos.map((crypto) {
+      // Se construye el símbolo usado en Binance, concatenando el símbolo en mayúsculas con "USDT"
+      // Ejemplo: para crypto.symbol "btc" se obtiene "BTCUSDT"
+      String binanceSymbol = "${crypto.symbol.toUpperCase()}USDT";
 
-        // Determinar el color basado en la variación de precio
-        Color color = const Color(0xFFFFFFFF);
-        if (newPrice > oldPrice) {
-          color = Colors.green; // Verde si el precio sube
-        } else if (newPrice < oldPrice) {
-          color = Colors.red; // Rojo si el precio baja
-        }
+      // Se obtiene el precio anterior de la criptomoneda, si no existe se toma el precio actual
+      final double oldPrice = _previousPrices[crypto.id] ?? crypto.price;
 
-        // Actualizar el color en el mapa temporal
-        updatedColors[crypto.id] = color;
+      // Se obtiene el nuevo precio desde el evento, usando el símbolo en minúsculas, si no existe se usa el precio actual
+      final double newPrice = event.prices[binanceSymbol.toLowerCase()] ?? crypto.price;
 
-        // Almacenar el precio actualizado para futuras comparaciones
-        _previousPrices[crypto.id] = newPrice;
+      // Se define un color inicial (blanco) para la representación del precio
+      Color color = const Color(0xFFFFFFFF);
 
-        // Devolver una nueva instancia de la criptomoneda con el precio actualizado
-        return Crypto(
-          id: crypto.id,
-          name: crypto.name,
-          symbol: crypto.symbol,
-          price: newPrice,
-          logoUrl: crypto.logoUrl,
-        );
-      }).toList();
+      // Se asigna el color verde si el nuevo precio es mayor que el precio anterior
+      if (newPrice > oldPrice) {
+        color = Colors.green;
+      // Se asigna el color rojo si el nuevo precio es menor que el precio anterior
+      } else if (newPrice < oldPrice) {
+        color = Colors.red;
+      }
 
-      // Ordenar las criptomonedas por precio en orden descendente
-      updatedCryptos.sort((a, b) => b.price.compareTo(a.price));
+      // Se actualiza el mapa de colores con el color determinado para esta criptomoneda
+      updatedColors[crypto.id] = color;
 
-      // Emitir el nuevo estado con las criptomonedas actualizadas y los colores calculados
-      emit(CryptoLoaded(cryptos: updatedCryptos, priceColors: updatedColors));
-    }
+      // Se actualiza el precio anterior con el nuevo precio para futuras comparaciones
+      _previousPrices[crypto.id] = newPrice;
+
+      // Se retorna una nueva instancia de Crypto con el precio actualizado
+      return Crypto(
+        id: crypto.id,
+        name: crypto.name,
+        symbol: crypto.symbol,
+        price: newPrice,
+        logoUrl: crypto.logoUrl,
+      );
+    }).toList();
+
+    // Se ordena la lista de criptomonedas en forma descendente según su precio
+    updatedCryptos.sort((a, b) => b.price.compareTo(a.price));
+
+    // Se emite el nuevo estado CryptoLoaded con la lista de criptomonedas actualizadas y el mapa de colores de precios
+    emit(CryptoLoaded(cryptos: updatedCryptos, priceColors: updatedColors));
   }
+}
+
 
   /// Handler para reconectar el WebSocket con optimización de retroceso exponencial y jitter
   Future<void> _onReconnectWebSocket(

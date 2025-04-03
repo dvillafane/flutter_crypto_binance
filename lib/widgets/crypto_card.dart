@@ -24,17 +24,19 @@ class CryptoCard extends StatelessWidget {
       // Define el margen de la tarjeta (espaciado superior/inferior y lateral).
       margin: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 8.0),
       shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(12.0), // Bordes redondeados.
+        borderRadius: BorderRadius.circular(12.0), // Bordes redondeados.
       ),
       elevation: 6.0,
       color: cardColor,
       child: ListTile(
         // Muestra el logo de la criptomoneda como avatar circular.
         leading: CircleAvatar(
-          backgroundColor: cardColor, 
-          backgroundImage: NetworkImage(
-            crypto.logoUrl,
-          ), // Carga la imagen desde una URL.
+          // Se establece el color de fondo del avatar usando 'cardColor'
+          backgroundColor: cardColor,
+          child:
+              crypto.logoUrl.isNotEmpty
+                  ? Image.network(crypto.logoUrl) // Muestra la imagen del logo obtenido de internet.
+                  : const Icon(Icons.monetization_on, color: Colors.white), // Muestra el ícono predeterminado en caso de no haber logo.
         ),
         // Título que muestra el nombre y símbolo de la criptomoneda.
         title: Text(
