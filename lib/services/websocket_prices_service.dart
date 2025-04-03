@@ -1,58 +1,73 @@
-// Importa la librería para trabajar con JSON
-import 'dart:convert';
-// Importa la clase IOWebSocketChannel para establecer conexiones WebSocket
+// Importa la biblioteca para decodificar JSON.
+import 'dart:convert'; 
+// Importa el canal de WebSocket para manejar la conexión.
 import 'package:web_socket_channel/io.dart';
+// Importa debugPrint para imprimir mensajes en la consola de depuración.
+import 'package:flutter/foundation.dart' show debugPrint;
 
-/// Servicio que maneja la conexión y el procesamiento de precios en tiempo real usando WebSocket.
+// Servicio para manejar la conexión WebSocket y recibir precios en tiempo real.
 class WebSocketPricesService {
-  // Declaración de la variable de canal WebSocket
-  late IOWebSocketChannel _channel;
+  // Canal de conexión WebSocket.
+  IOWebSocketChannel? _channel;
+  // Variable que indica si el WebSocket está conectado.
+  bool _isConnected = false;
 
-  /// Constructor que inicia la conexión al crear una instancia del servicio.
-  WebSocketPricesService() {
-    _connect();
-  }
-
-  /// Método privado para conectar con el WebSocket de Binance.
-  void _connect() {
-    _channel = IOWebSocketChannel.connect(
-      'wss://stream.binance.com:9443/ws/!ticker@arr', // Conexión al stream de tickers de Binance
-    );
-  }
-
-  /// Stream que emite un mapa de precios actualizado en tiempo real.
-  /// Cada mensaje del WebSocket se procesa para extraer un mapa de símbolos a precios.
-  Stream<Map<String, double>> get pricesStream async* {
-    // Escuchar los mensajes entrantes del WebSocket
-    await for (var message in _channel.stream) {
-      // Binance envía un arreglo de tickers en formato JSON
+  // Stream que emite un mapa con los precios actualizados de las criptomonedas.
+  Stream<Map<String, double>> get pricesStream {
+    // Verifica si el canal está nulo o si no está conectado.
+    if (_channel == null || !_isConnected) {
+      throw Exception('WebSocket no está conectado');
+    }
+    // Mapea los mensajes recibidos desde el canal WebSocket.
+    return _channel!.stream.map((message) {
+      debugPrint('Datos recibidos del WebSocket: $message');
+      // Decodifica el mensaje JSON recibido desde el WebSocket.
       final List<dynamic> tickers = json.decode(message);
-      // Inicializamos un mapa para almacenar el símbolo y su precio correspondiente
       final Map<String, double> parsedData = {};
-
-      // Iteramos sobre cada ticker del arreglo
+      
+      // Recorre la lista de "tickers" recibidos.
       for (var ticker in tickers) {
-        // Extraemos el símbolo, lo convertimos a minúsculas (ejemplo: "btcusdt")
+        // Obtiene el símbolo en minúsculas (por ejemplo, "btcusdt").
         final String symbol = ticker['s'].toString().toLowerCase();
-        // Extraemos el precio, el campo "c" representa el precio actual y se convierte a double
+        // Intenta convertir el precio a un valor de tipo double, si no puede, usa 0.
         final double price = double.tryParse(ticker['c'].toString()) ?? 0;
-        // Se asigna el precio al símbolo en el mapa
+        // Asigna el precio al símbolo en el mapa.
         parsedData[symbol] = price;
       }
-      // Emitir el mapa de precios procesado a través del stream
-      yield parsedData;
+      debugPrint('Datos parseados: $parsedData');
+      // Retorna el mapa con los precios actualizados.
+      return parsedData;
+    });
+  }
+
+  // Método para conectar el WebSocket.
+  void connect() {
+    // Verifica que no haya una conexión activa.
+    if (!_isConnected) {
+      // Crea el canal de conexión al WebSocket de Binance para recibir actualizaciones.
+      _channel = IOWebSocketChannel.connect(
+        'wss://stream.binance.com:9443/ws/!ticker@arr',
+      );
+      // Marca el estado como conectado.
+      _isConnected = true;
+      debugPrint('WebSocket conectado');
     }
   }
 
-  /// Método para reconectar el WebSocket.
-  /// Cierra la conexión actual y establece una nueva conexión.
-  void reconnect() {
-    _channel.sink.close();
-    _connect();
+  // Método para desconectar el WebSocket.
+  void disconnect() {
+    // Verifica si el WebSocket está conectado.
+    if (_isConnected) {
+      // Cierra el canal de WebSocket y limpia los recursos.
+      _channel?.sink.close();
+      _channel = null;
+      _isConnected = false;
+      debugPrint('WebSocket desconectado');
+    }
   }
 
-  /// Método para cerrar la conexión del WebSocket de forma segura.
+  // Método para liberar recursos y desconectar el WebSocket.
   void dispose() {
-    _channel.sink.close();
+    disconnect();
   }
 }
