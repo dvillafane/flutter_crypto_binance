@@ -5,7 +5,7 @@ import '../blocs/crypto_bloc.dart';
 import '../models/crypto.dart';
 import '../widgets/crypto_card.dart';
 
-/// Pantalla principal para mostrar los precios de las criptomonedas con buscador
+/// Pantalla principal para mostrar los precios de las criptomonedas con buscador.
 class CryptoPricesScreen extends StatefulWidget {
   const CryptoPricesScreen({super.key});
 
@@ -14,15 +14,15 @@ class CryptoPricesScreen extends StatefulWidget {
 }
 
 class _CryptoPricesScreenState extends State<CryptoPricesScreen> {
-  // Variable para almacenar el texto ingresado en el campo de búsqueda
+  // Variable para almacenar el texto ingresado en el campo de búsqueda.
   String searchQuery = "";
 
-  // Controlador para el campo de búsqueda
+  // Controlador para el campo de búsqueda.
   final TextEditingController _searchController = TextEditingController();
 
   @override
   void dispose() {
-    // Liberar recursos asociados al controlador cuando el widget se elimine
+    // Libera recursos asociados al controlador cuando el widget se elimina.
     _searchController.dispose();
     super.dispose();
   }
@@ -30,92 +30,104 @@ class _CryptoPricesScreenState extends State<CryptoPricesScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      // Establece el fondo de la pantalla en color negro.
       backgroundColor: Colors.black,
       appBar: AppBar(
         backgroundColor: Colors.black,
-        elevation: 0,
-        // Utiliza un Row en el title para colocar el buscador y el botón en la misma línea
+        elevation: 0, // Sin sombra en la barra superior.
+        // Utiliza un Row en el título para colocar el buscador y el botón en la misma línea.
         title: Row(
           children: [
-            // Campo de búsqueda expandido para ocupar la mayor parte del espacio
+            // Campo de búsqueda expandido para ocupar la mayor parte del espacio.
             Expanded(
               child: TextField(
-                controller: _searchController,
-                style: const TextStyle(color: Colors.white),
+                controller: _searchController, // Controlador del texto ingresado.
+                style: const TextStyle(color: Colors.white), // Estilo de texto en color blanco.
                 decoration: InputDecoration(
-                  hintText: "Buscar criptomoneda...",
-                  hintStyle: const TextStyle(color: Colors.grey),
-                  prefixIcon: const Icon(Icons.search, color: Colors.white),
-                  filled: true,
-                  fillColor: Colors.grey[900],
+                  hintText: "Buscar criptomoneda...", // Texto de sugerencia.
+                  hintStyle: const TextStyle(color: Colors.grey), // Color del texto de sugerencia.
+                  prefixIcon: const Icon(Icons.search, color: Colors.white), // Ícono de búsqueda.
+                  filled: true, // Fondo relleno en el campo.
+                  fillColor: Colors.grey[900], // Color de fondo del campo de búsqueda.
                   contentPadding: const EdgeInsets.symmetric(
                     vertical: 0,
                     horizontal: 16,
                   ),
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(20),
-                    borderSide: BorderSide.none,
+                    borderRadius: BorderRadius.circular(20), // Bordes redondeados.
+                    borderSide: BorderSide.none, // Sin borde visible.
                   ),
                 ),
+                // Actualiza el estado cuando cambia el texto en el buscador.
                 onChanged: (value) {
-                  // Actualizar el estado al cambiar el texto
                   setState(() {
                     searchQuery = value;
                   });
                 },
               ),
             ),
-            const SizedBox(width: 8), // Espacio entre el campo y el botón
-            // Botón de recarga
+            const SizedBox(width: 8), // Espacio entre el campo y el botón.
+            // Botón de recarga que reconecta el WebSocket para obtener precios actualizados.
             IconButton(
-              icon: const Icon(Icons.refresh),
-              color: const Color(0xFFD2E4FF),
+              icon: const Icon(Icons.refresh), // Ícono de recarga.
+              color: const Color(0xFFD2E4FF), // Color del ícono.
               onPressed: () {
+                // Dispara el evento para reconectar el WebSocket.
                 context.read<CryptoBloc>().add(ReconnectWebSocket());
               },
             ),
           ],
         ),
       ),
+      // Cuerpo de la pantalla que contiene la lista de criptomonedas.
       body: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start, // Alinea a la izquierda.
         children: [
+          // Expande el bloque de contenido para ocupar todo el espacio disponible.
           Expanded(
             child: BlocBuilder<CryptoBloc, CryptoState>(
               builder: (context, state) {
+                // Muestra un indicador de carga mientras se obtienen los datos.
                 if (state is CryptoLoading) {
                   return const Center(child: CircularProgressIndicator());
-                } else if (state is CryptoLoaded) {
+                } 
+                // Muestra la lista de criptomonedas cuando los datos están cargados.
+                else if (state is CryptoLoaded) {
+                  // Filtro de criptomonedas basado en la búsqueda ingresada.
                   List<Crypto> filteredCryptos = state.cryptos;
                   if (searchQuery.isNotEmpty) {
                     filteredCryptos = filteredCryptos.where((crypto) {
+                      // Filtra ignorando mayúsculas y minúsculas.
                       return crypto.name.toLowerCase().contains(
                             searchQuery.toLowerCase(),
                           );
                     }).toList();
                   }
 
+                  // Genera la lista de criptomonedas filtradas.
                   return ListView.builder(
-                    padding: const EdgeInsets.all(8.0),
-                    itemCount: filteredCryptos.length,
+                    padding: const EdgeInsets.all(8.0), // Espaciado alrededor de la lista.
+                    itemCount: filteredCryptos.length, // Número de elementos en la lista.
                     itemBuilder: (context, index) {
                       final crypto = filteredCryptos[index];
                       return CryptoCard(
-                        crypto: crypto,
-                        priceColor:
-                            state.priceColors[crypto.id] ?? Colors.white,
-                        cardColor: const Color(0xFF303030), // Color de fondo
+                        crypto: crypto, // Objeto de criptomoneda.
+                        priceColor: state.priceColors[crypto.id] ?? Colors.white, // Color del precio.
+                        cardColor: const Color(0xFF303030), // Color de fondo de la tarjeta.
                       );
                     },
                   );
-                } else if (state is CryptoError) {
+                } 
+                // Muestra un mensaje de error si ocurre un problema al cargar los datos.
+                else if (state is CryptoError) {
                   return Center(
                     child: Text(
-                      state.message,
-                      style: const TextStyle(color: Colors.red),
+                      state.message, // Mensaje de error proveniente del estado.
+                      style: const TextStyle(color: Colors.red), // Texto en color rojo.
                     ),
                   );
                 }
+                // Devuelve un contenedor vacío si no hay resultados ni errores.
                 return Container();
               },
             ),
