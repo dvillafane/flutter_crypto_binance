@@ -40,10 +40,10 @@ class HomeScreen extends StatelessWidget {
           ),
         ),
         // Cuerpo de la pantalla que muestra las vistas correspondientes a cada pestaña.
-        body: const TabBarView(
+        body: TabBarView(
           children: [
             // Muestra la pantalla de precios cuando la pestaña "Precios" está activa.
-            CryptoPricesScreen(),
+            const CryptoPricesScreen(),
             // Muestra la pantalla de detalles cuando la pestaña "Detalles" está activa.
             CryptoDetailListScreen(),
           ],
