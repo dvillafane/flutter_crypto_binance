@@ -1,11 +1,9 @@
-// Importa el paquete material de Flutter, que provee componentes de interfaz gráfica.
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../blocs/crypto_bloc.dart';
-import '../models/crypto.dart';
+import '../models/crypto_detail.dart'; // Importamos CryptoDetail en lugar de Crypto
 import '../widgets/crypto_card.dart';
 
-/// Pantalla principal para mostrar los precios de las criptomonedas con buscador.
 class CryptoPricesScreen extends StatefulWidget {
   const CryptoPricesScreen({super.key});
 
@@ -14,15 +12,11 @@ class CryptoPricesScreen extends StatefulWidget {
 }
 
 class _CryptoPricesScreenState extends State<CryptoPricesScreen> {
-  // Variable para almacenar el texto ingresado en el campo de búsqueda.
   String searchQuery = "";
-
-  // Controlador para el campo de búsqueda.
   final TextEditingController _searchController = TextEditingController();
 
   @override
   void dispose() {
-    // Libera recursos asociados al controlador cuando el widget se elimina.
     _searchController.dispose();
     super.dispose();
   }
@@ -30,46 +24,28 @@ class _CryptoPricesScreenState extends State<CryptoPricesScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // Establece el fondo de la pantalla en color negro.
       backgroundColor: Colors.black,
       appBar: AppBar(
         backgroundColor: Colors.black,
-        elevation: 0, // Sin sombra en la barra superior.
-        // Utiliza un Row en el título para colocar el buscador y el botón en la misma línea.
+        elevation: 0,
         title: Row(
           children: [
-            // Campo de búsqueda expandido para ocupar la mayor parte del espacio.
             Expanded(
               child: TextField(
-                controller:
-                    _searchController, // Controlador del texto ingresado.
-                style: const TextStyle(
-                  color: Colors.white,
-                ), // Estilo de texto en color blanco.
+                controller: _searchController,
+                style: const TextStyle(color: Colors.white),
                 decoration: InputDecoration(
-                  hintText: "Buscar criptomoneda...", // Texto de sugerencia.
-                  hintStyle: const TextStyle(
-                    color: Colors.grey,
-                  ), // Color del texto de sugerencia.
-                  prefixIcon: const Icon(
-                    Icons.search,
-                    color: Colors.white,
-                  ), // Ícono de búsqueda.
-                  filled: true, // Fondo relleno en el campo.
-                  fillColor:
-                      Colors.grey[900], // Color de fondo del campo de búsqueda.
-                  contentPadding: const EdgeInsets.symmetric(
-                    vertical: 0,
-                    horizontal: 16,
-                  ),
+                  hintText: "Buscar criptomoneda...",
+                  hintStyle: const TextStyle(color: Colors.grey),
+                  prefixIcon: const Icon(Icons.search, color: Colors.white),
+                  filled: true,
+                  fillColor: Colors.grey[900],
+                  contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(
-                      20,
-                    ), // Bordes redondeados.
-                    borderSide: BorderSide.none, // Sin borde visible.
+                    borderRadius: BorderRadius.circular(20),
+                    borderSide: BorderSide.none,
                   ),
                 ),
-                // Actualiza el estado cuando cambia el texto en el buscador.
                 onChanged: (value) {
                   setState(() {
                     searchQuery = value;
@@ -78,33 +54,23 @@ class _CryptoPricesScreenState extends State<CryptoPricesScreen> {
               ),
             ),
             const SizedBox(width: 8),
-            // El widget BlocBuilder permite construir la interfaz en función del estado actual del BLoC.
-            // Escucha los cambios en el estado del CryptoBloc y actualiza la UI en consecuencia.
             BlocBuilder<CryptoBloc, CryptoState>(
               builder: (context, state) {
-                // Verifica si el estado actual es CryptoLoaded (cuando las criptomonedas están cargadas).
                 if (state is CryptoLoaded) {
                   return IconButton(
-                    // Muestra un ícono diferente dependiendo del estado de la conexión WebSocket.
                     icon: Icon(
-                      state.isWebSocketConnected
-                          ? Icons.pause
-                          : Icons.play_arrow,
-                      color: const Color(0xFFD2E4FF), // Color del ícono.
+                      state.isWebSocketConnected ? Icons.pause : Icons.play_arrow,
+                      color: const Color(0xFFD2E4FF),
                     ),
-                    // Acción que se ejecuta al presionar el botón.
                     onPressed: () {
-                      // Si el WebSocket está conectado, envía un evento para desconectarlo.
                       if (state.isWebSocketConnected) {
                         context.read<CryptoBloc>().add(DisconnectWebSocket());
                       } else {
-                        // Si el WebSocket está desconectado, envía un evento para conectarlo.
                         context.read<CryptoBloc>().add(ConnectWebSocket());
                       }
                     },
                   );
                 }
-                // Si el estado no es CryptoLoaded, retorna un SizedBox vacío (no muestra nada).
                 return const SizedBox.shrink();
               },
             ),
@@ -120,36 +86,22 @@ class _CryptoPricesScreenState extends State<CryptoPricesScreen> {
                 if (state is CryptoLoading) {
                   return const Center(child: CircularProgressIndicator());
                 } else if (state is CryptoLoaded) {
-                  // Filtro de criptomonedas basado en la búsqueda ingresada.
-                  List<Crypto> filteredCryptos = state.cryptos;
+                  // Cambiamos List<Crypto> a List<CryptoDetail>
+                  List<CryptoDetail> filteredCryptos = state.cryptos;
                   if (searchQuery.isNotEmpty) {
-                    filteredCryptos =
-                        filteredCryptos.where((crypto) {
-                          // Filtra ignorando mayúsculas y minúsculas.
-                          return crypto.name.toLowerCase().contains(
-                            searchQuery.toLowerCase(),
-                          );
-                        }).toList();
+                    filteredCryptos = filteredCryptos.where((crypto) {
+                      return crypto.name.toLowerCase().contains(searchQuery.toLowerCase());
+                    }).toList();
                   }
-
-                  // Genera la lista de criptomonedas filtradas.
                   return ListView.builder(
-                    padding: const EdgeInsets.all(
-                      8.0,
-                    ), // Espaciado alrededor de la lista.
-                    itemCount:
-                        filteredCryptos
-                            .length, // Número de elementos en la lista.
+                    padding: const EdgeInsets.all(8.0),
+                    itemCount: filteredCryptos.length,
                     itemBuilder: (context, index) {
                       final crypto = filteredCryptos[index];
                       return CryptoCard(
-                        crypto: crypto, // Objeto de criptomoneda.
-                        priceColor:
-                            state.priceColors[crypto.id] ??
-                            Colors.white, // Color del precio.
-                        cardColor: const Color(
-                          0xFF303030,
-                        ), // Color de fondo de la tarjeta.
+                        crypto: crypto, // Ahora es CryptoDetail
+                        priceColor: state.priceColors[crypto.symbol] ?? Colors.white,
+                        cardColor: const Color(0xFF303030),
                       );
                     },
                   );

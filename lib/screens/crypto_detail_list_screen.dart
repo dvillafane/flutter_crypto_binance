@@ -1,83 +1,119 @@
 import 'package:flutter/material.dart';
-import '../services/crypto_detail_service.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import '../blocs/crypto_bloc.dart';
 import '../models/crypto_detail.dart';
 
 class CryptoDetailListScreen extends StatefulWidget {
+  const CryptoDetailListScreen({super.key});
+
   @override
   _CryptoDetailListScreenState createState() => _CryptoDetailListScreenState();
 }
 
 class _CryptoDetailListScreenState extends State<CryptoDetailListScreen> {
-  late Future<List<CryptoDetail>> _initialCryptoDetailsFuture;
-  late Stream<Map<String, double>> _priceStream;
-  List<CryptoDetail> _cryptoDetails = [];
+  String searchQuery = "";
+  final TextEditingController _searchController = TextEditingController();
 
   @override
-  void initState() {
-    super.initState();
-    final service = CryptoDetailService();
-    _initialCryptoDetailsFuture = service.getCachedCryptoDetails().then((cached) async {
-      if (cached.length >= 100) {
-        return cached;
-      }
-      return service.fetchTop100CryptoDetails();
-    });
-    _priceStream = service.streamRealTimePrices();
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Top 100 Criptomonedas')),
-      body: FutureBuilder<List<CryptoDetail>>(
-        future: _initialCryptoDetailsFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return Center(child: CircularProgressIndicator());
-          } else if (snapshot.hasError) {
-            return Center(child: Text('Error: ${snapshot.error}'));
-          } else if (snapshot.hasData) {
-            if (_cryptoDetails.isEmpty) {
-              _cryptoDetails = snapshot.data!;
-            }
-            return StreamBuilder<Map<String, double>>(
-              stream: _priceStream,
-              builder: (context, streamSnapshot) {
-                if (streamSnapshot.hasData) {
-                  final priceUpdates = streamSnapshot.data!;
-                  for (var i = 0; i < _cryptoDetails.length; i++) {
-                    final newPrice = priceUpdates[_cryptoDetails[i].symbol];
-                    if (newPrice != null) {
-                      _cryptoDetails[i] = CryptoDetail(
-                        symbol: _cryptoDetails[i].symbol,
-                        name: _cryptoDetails[i].name,
-                        priceUsd: newPrice,
-                        volumeUsd24Hr: _cryptoDetails[i].volumeUsd24Hr,
-                        logoUrl: _cryptoDetails[i].logoUrl,
-                      );
-                    }
-                  }
+      appBar: AppBar(
+        title: Row(
+          children: [
+            Expanded(
+              child: TextField(
+                controller: _searchController,
+                style: const TextStyle(color: Colors.white),
+                decoration: InputDecoration(
+                  hintText: "Buscar criptomoneda...",
+                  hintStyle: const TextStyle(color: Colors.grey),
+                  prefixIcon: const Icon(Icons.search, color: Colors.white),
+                  filled: true,
+                  fillColor: Colors.grey[900],
+                  contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(20),
+                    borderSide: BorderSide.none,
+                  ),
+                ),
+                onChanged: (value) {
+                  setState(() {
+                    searchQuery = value;
+                  });
+                },
+              ),
+            ),
+            const SizedBox(width: 8),
+            BlocBuilder<CryptoBloc, CryptoState>(
+              builder: (context, state) {
+                if (state is CryptoLoaded) {
+                  return IconButton(
+                    icon: Icon(
+                      state.isWebSocketConnected ? Icons.pause : Icons.play_arrow,
+                      color: Colors.white,
+                    ),
+                    onPressed: () {
+                      if (state.isWebSocketConnected) {
+                        context.read<CryptoBloc>().add(DisconnectWebSocket());
+                      } else {
+                        context.read<CryptoBloc>().add(ConnectWebSocket());
+                      }
+                    },
+                  );
                 }
-                return ListView.builder(
-                  itemCount: _cryptoDetails.length,
-                  itemBuilder: (context, index) {
-                    final detail = _cryptoDetails[index];
-                    return Card(
-                      child: ListTile(
-                        leading: Image.network(
-                          detail.logoUrl,
-                          width: 32,
-                          height: 32,
-                          errorBuilder: (_, __, ___) => Icon(Icons.error),
-                        ),
-                        title: Text(detail.name),
-                        subtitle: Text('\$${detail.priceUsd.toStringAsFixed(2)} USD'),
-                        onTap: () => _showCryptoDetailDialog(context, detail),
+                return const SizedBox.shrink();
+              },
+            ),
+          ],
+        ),
+      ),
+      body: BlocBuilder<CryptoBloc, CryptoState>(
+        builder: (context, state) {
+          if (state is CryptoLoading) {
+            return const Center(child: CircularProgressIndicator());
+          } else if (state is CryptoLoaded) {
+            List<CryptoDetail> filteredCryptos = state.cryptos;
+            if (searchQuery.isNotEmpty) {
+              filteredCryptos = filteredCryptos.where((crypto) {
+                return crypto.name.toLowerCase().contains(searchQuery.toLowerCase());
+              }).toList();
+            }
+            return ListView.builder(
+              itemCount: filteredCryptos.length,
+              itemBuilder: (context, index) {
+                final detail = filteredCryptos[index];
+                return Card(
+                  child: ListTile(
+                    leading: Image.network(
+                      detail.logoUrl,
+                      width: 32,
+                      height: 32,
+                      errorBuilder: (_, __, ___) => const Icon(Icons.error),
+                    ),
+                    title: Text(detail.name),
+                    subtitle: Text(
+                      '\$${detail.priceUsd.toStringAsFixed(2)} USD',
+                      style: TextStyle(
+                        color: state.priceColors[detail.symbol] ?? Colors.black,
                       ),
-                    );
-                  },
+                    ),
+                    onTap: () => _showCryptoDetailDialog(context, detail),
+                  ),
                 );
               },
+            );
+          } else if (state is CryptoError) {
+            return Center(
+              child: Text(
+                state.message,
+                style: const TextStyle(color: Colors.red),
+              ),
             );
           }
           return Container();
@@ -97,9 +133,9 @@ class _CryptoDetailListScreenState extends State<CryptoDetailListScreen> {
                 detail.logoUrl,
                 width: 32,
                 height: 32,
-                errorBuilder: (_, __, ___) => Icon(Icons.error),
+                errorBuilder: (_, __, ___) => const Icon(Icons.error),
               ),
-              SizedBox(width: 8),
+              const SizedBox(width: 8),
               Text(detail.name),
             ],
           ),
@@ -115,7 +151,7 @@ class _CryptoDetailListScreenState extends State<CryptoDetailListScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: Text('Cerrar'),
+              child: const Text('Cerrar'),
             ),
           ],
         );
