@@ -1,8 +1,9 @@
 // Importamos los paquetes necesarios
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart'; // Para usar Bloc en la interfaz
-import '../blocs/crypto_bloc.dart'; // Bloc que maneja el estado de las criptos
-import '../models/crypto_detail.dart'; // Modelo de detalle de criptomoneda
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:intl/intl.dart'; // Importación agregada
+import '../blocs/crypto_bloc.dart';
+import '../models/crypto_detail.dart';
 
 // Pantalla de lista de detalles de criptomonedas
 class CryptoDetailListScreen extends StatefulWidget {
@@ -16,6 +17,10 @@ class CryptoDetailListScreenState extends State<CryptoDetailListScreen> {
   String searchQuery = ""; // Variable para guardar el texto de búsqueda
   final TextEditingController _searchController =
       TextEditingController(); // Controlador del TextField
+  final numberFormat = NumberFormat(
+    '#,##0.00',
+    'en_US',
+  ); // Formateador agregado
 
   @override
   void dispose() {
@@ -85,15 +90,14 @@ class CryptoDetailListScreenState extends State<CryptoDetailListScreen> {
           ),
         ),
       ),
-
       // Cuerpo de la pantalla: Lista de criptomonedas
       body: BlocBuilder<CryptoBloc, CryptoState>(
         builder: (context, state) {
           if (state is CryptoLoading) {
-            // Muestra un loader mientras se cargan los datos
+            // Muestra un indicador de carga mientras se obtienen los datos
             return const Center(child: CircularProgressIndicator());
           } else if (state is CryptoLoaded) {
-            // Filtra las criptomonedas según la búsqueda
+            // Filtramos la lista según el texto de búsqueda
             List<CryptoDetail> filteredCryptos = state.cryptos;
             if (searchQuery.isNotEmpty) {
               filteredCryptos =
@@ -103,7 +107,6 @@ class CryptoDetailListScreenState extends State<CryptoDetailListScreen> {
                     );
                   }).toList();
             }
-
             // Lista de criptomonedas renderizadas
             return ListView.builder(
               itemCount: filteredCryptos.length,
@@ -131,7 +134,7 @@ class CryptoDetailListScreenState extends State<CryptoDetailListScreen> {
                             state.priceColors[detail.symbol] ?? Colors.white70,
                       ),
                       child: Text(
-                        '\$${detail.priceUsd.toStringAsFixed(2)} USD',
+                        '\$${numberFormat.format(detail.priceUsd)} USD',
                       ),
                     ),
                     onTap:
@@ -144,7 +147,7 @@ class CryptoDetailListScreenState extends State<CryptoDetailListScreen> {
               },
             );
           } else if (state is CryptoError) {
-            // Muestra un mensaje de error si falla la carga
+            // Muestra un mensaje de error si ocurre uno
             return Center(
               child: Text(
                 state.message,
@@ -152,8 +155,7 @@ class CryptoDetailListScreenState extends State<CryptoDetailListScreen> {
               ),
             );
           }
-
-          // Si no hay estado reconocido, muestra un contenedor vacío
+          // Si el estado no es ninguno de los anteriores, no muestra nada
           return Container();
         },
       ),
@@ -189,11 +191,11 @@ class CryptoDetailListScreenState extends State<CryptoDetailListScreen> {
                 style: const TextStyle(color: Colors.white70),
               ),
               Text(
-                'Precio: \$${detail.priceUsd.toStringAsFixed(2)} USD',
+                'Precio: \$${numberFormat.format(detail.priceUsd)} USD',
                 style: const TextStyle(color: Colors.white70),
               ),
               Text(
-                'Volumen 24h: \$${detail.volumeUsd24Hr.toStringAsFixed(2)} USD',
+                'Volumen 24h: \$${numberFormat.format(detail.volumeUsd24Hr)} USD',
                 style: const TextStyle(color: Colors.white70),
               ),
             ],
