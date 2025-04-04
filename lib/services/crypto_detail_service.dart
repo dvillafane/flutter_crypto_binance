@@ -3,6 +3,7 @@ import 'dart:convert'; // Para decodificar la respuesta JSON
 import 'package:http/http.dart'
     as http; // Cliente HTTP para hacer solicitudes a la API
 import 'package:cloud_firestore/cloud_firestore.dart'; // Firestore para almacenamiento en la nube
+import 'package:flutter_dotenv/flutter_dotenv.dart'; // Para acceder a variables de entorno
 import '../models/crypto_detail.dart'; // Modelo de datos
 
 // Servicio para obtener detalles de criptomonedas
@@ -13,8 +14,8 @@ class CryptoDetailService {
   // URL base de la API de CoinMarketCap
   final String coinMarketCapBaseUrl = 'https://pro-api.coinmarketcap.com';
 
-  // Clave API personal de CoinMarketCap (⚠️ Deberías ocultarla en producción)
-  final String apiKey = '78e4fb3b-8828-4d00-8210-501ea8951fe3';
+  // Clave API obtenida desde las variables de entorno
+  final String apiKey = dotenv.env['API_KEY'] ?? 'default_key'; // Fallback si no se encuentra
 
   /// Método para obtener las 100 criptomonedas principales desde CoinMarketCap
   Future<List<CryptoDetail>> fetchTop100CryptoDetails() async {

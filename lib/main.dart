@@ -4,6 +4,8 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 // Importa las opciones de configuración de Firebase generadas automáticamente
 import 'package:flutter_crypto_binance/firebase_options.dart';
+// Importa flutter_dotenv para manejar variables de entorno
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 // Importa la pantalla principal de la aplicación
 import 'screens/home_screen.dart';
 
@@ -12,6 +14,12 @@ void main() async {
   // Asegura que Flutter esté completamente inicializado antes de ejecutar código asíncrono
   WidgetsFlutterBinding.ensureInitialized();
 
+  // Carga el archivo .env con las variables de entorno
+  try {
+    await dotenv.load(fileName: ".env");
+  } catch (e) {
+    debugPrint("Error al cargar el archivo .env: $e");
+  }
   // Inicializa Firebase con la configuración específica del dispositivo (web, Android, iOS)
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
@@ -32,7 +40,6 @@ class MyApp extends StatelessWidget {
       // Define el tema visual general de la app
       theme: ThemeData(
         brightness: Brightness.dark, // Activa modo oscuro
-
         primaryColor: Colors.black, // Color principal: negro
         // Fondo negro para toda la app (pantallas Scaffold)
         scaffoldBackgroundColor: Colors.black,
