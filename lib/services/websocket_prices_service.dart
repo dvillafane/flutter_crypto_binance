@@ -1,5 +1,5 @@
 // Importa la biblioteca para decodificar JSON.
-import 'dart:convert'; 
+import 'dart:convert';
 // Importa el canal de WebSocket para manejar la conexión.
 import 'package:web_socket_channel/io.dart';
 // Importa debugPrint para imprimir mensajes en la consola de depuración.
@@ -24,7 +24,7 @@ class WebSocketPricesService {
       // Decodifica el mensaje JSON recibido desde el WebSocket.
       final List<dynamic> tickers = json.decode(message);
       final Map<String, double> parsedData = {};
-      
+
       // Recorre la lista de "tickers" recibidos.
       for (var ticker in tickers) {
         // Obtiene el símbolo en minúsculas (por ejemplo, "btcusdt").

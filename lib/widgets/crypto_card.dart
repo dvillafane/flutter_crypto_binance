@@ -1,50 +1,49 @@
+// Importa el paquete de Flutter para widgets y estilos
 import 'package:flutter/material.dart';
-import '../models/crypto_detail.dart'; // Importamos CryptoDetail
+// Importa el modelo que representa los detalles de una criptomoneda
+import '../models/crypto_detail.dart';
 
+/// Widget sin estado (StatelessWidget) que muestra una tarjeta con la información de una criptomoneda
 class CryptoCard extends StatelessWidget {
-  final CryptoDetail crypto; // Cambiamos a CryptoDetail
-  final Color priceColor;
-  final Color cardColor;
+  // Instancia del modelo de datos que contiene los detalles de la criptomoneda
+  final CryptoDetail crypto;
 
+  // Color personalizado para mostrar el precio (puede cambiar según suba o baje)
+  final Color priceColor;
+
+  // Constructor de la clase que requiere los parámetros [crypto] y [priceColor]
   const CryptoCard({
-    super.key,
-    required this.crypto,
-    required this.priceColor,
-    required this.cardColor,
+    super.key, // Permite manejar claves únicas en Flutter para widgets
+    required this.crypto, // Requiere el objeto de datos de la criptomoneda
+    required this.priceColor, // Requiere el color para el precio
   });
 
   @override
   Widget build(BuildContext context) {
     return Card(
-      margin: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 8.0),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12.0),
-      ),
-      elevation: 6.0,
-      color: cardColor,
+      // Color de fondo de la tarjeta (gris oscuro)
+      color: Colors.grey[900],
       child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor: cardColor,
-          child: crypto.logoUrl.isNotEmpty
-              ? Image.network(crypto.logoUrl)
-              : const Icon(Icons.monetization_on, color: Colors.white),
+        // Muestra el logo de la criptomoneda desde la URL
+        leading: Image.network(
+          crypto.logoUrl, // URL del logo de la criptomoneda
+          width: 32, // Ancho del logo
+          height: 32, // Alto del logo
+          // Si hay un error al cargar la imagen, muestra un ícono de error
+          errorBuilder:
+              (_, __, ___) => const Icon(Icons.error, color: Colors.red),
         ),
+        // Nombre de la criptomoneda como título
         title: Text(
-          '${crypto.name} (${crypto.symbol})',
-          style: const TextStyle(
-            fontSize: 19.0,
-            fontWeight: FontWeight.w600,
-            color: Color(0xDDFFFFFF),
-          ),
+          crypto.name,
+          style: const TextStyle(color: Colors.white), // Texto blanco
         ),
-        subtitle: AnimatedDefaultTextStyle(
-          duration: const Duration(milliseconds: 400),
+        // Precio en USD como subtítulo, formateado a dos decimales
+        subtitle: Text(
+          '\$${crypto.priceUsd.toStringAsFixed(2)} USD',
           style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.bold,
             color: priceColor,
-          ),
-          child: Text('\$${crypto.priceUsd.toStringAsFixed(2)}'), // Usamos priceUsd
+          ), // Color dinámico según suba o baje
         ),
       ),
     );

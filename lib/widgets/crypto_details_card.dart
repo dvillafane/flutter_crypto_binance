@@ -47,10 +47,7 @@ class CryptoDetailsCard extends StatelessWidget {
             ),
             const SizedBox(height: 8), // Espacio entre la imagen y el nombre.
             // Muestra el nombre de la criptomoneda en texto blanco.
-            Text(
-              crypto.name,
-              style: const TextStyle(color: Colors.white),
-            ),
+            Text(crypto.name, style: const TextStyle(color: Colors.white)),
           ],
         ),
       ),
