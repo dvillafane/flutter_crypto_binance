@@ -1,42 +1,79 @@
-// Importa el paquete material de Flutter, que provee componentes de interfaz gráfica.
+// Importa Firebase Core para inicializar Firebase en la app
+import 'package:firebase_core/firebase_core.dart';
+// Importa Flutter y su framework de diseño de UI
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-// Importa la pantalla principal de la aplicación.
+// Importa las opciones de configuración de Firebase generadas automáticamente
+import 'package:flutter_crypto_binance/firebase_options.dart';
+// Importa flutter_dotenv para manejar variables de entorno
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+// Importa la pantalla principal de la aplicación
 import 'screens/home_screen.dart';
-import 'blocs/crypto_bloc.dart';
-import 'services/crypto_service.dart';
-import 'services/websocket_prices_service.dart';
 
-// Función principal de la aplicación, el punto de entrada.
-// Ejecuta la aplicación pasando el widget MyApp.
-void main() => runApp(MyApp());
+/// Punto de entrada principal de la aplicación Flutter
+void main() async {
+  // Asegura que Flutter esté completamente inicializado antes de ejecutar código asíncrono
+  WidgetsFlutterBinding.ensureInitialized();
 
-/// Widget principal de la aplicación, de tipo StatelessWidget.
+  // Carga el archivo .env con las variables de entorno
+  try {
+    await dotenv.load(fileName: ".env");
+  } catch (e) {
+    debugPrint("Error al cargar el archivo .env: $e");
+  }
+  // Inicializa Firebase con la configuración específica del dispositivo (web, Android, iOS)
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
+  // Inicia la aplicación llamando a MyApp (el widget principal)
+  runApp(MyApp());
+}
+
+/// Widget principal de la aplicación, sin estado (StatelessWidget)
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
-  // Método build que construye la interfaz de usuario del widget.
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      // Proporciona el BLoC de criptomonedas al árbol completo de la aplicación
-      create: (_) => CryptoBloc(
-        cryptoService: CryptoService(),
-        pricesService: WebSocketPricesService(),
-      ),
-      child: MaterialApp(
-        // Título de la aplicación, utilizado en algunos contextos del sistema.
-        title: 'CoinCap API 2.0 Demo',
-        // Configuración del tema visual de la aplicación.
-        theme: ThemeData(
-          // Define una paleta de colores basada en un color semilla.
-          colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
-          // Activa el uso de Material Design 3.
-          useMaterial3: true,
+    return MaterialApp(
+      // Título de la app (se usa en algunos dispositivos al cambiar entre apps)
+      title: 'CoinCap API 2.0 Demo',
+
+      // Define el tema visual general de la app
+      theme: ThemeData(
+        brightness: Brightness.dark, // Activa modo oscuro
+        primaryColor: Colors.black, // Color principal: negro
+        // Fondo negro para toda la app (pantallas Scaffold)
+        scaffoldBackgroundColor: Colors.black,
+
+        // Tema para la AppBar (barra superior)
+        appBarTheme: const AppBarTheme(
+          backgroundColor: Colors.black,
+          titleTextStyle: TextStyle(color: Colors.white, fontSize: 20),
         ),
-        // Define la pantalla principal que se muestra al iniciar la aplicación.
-        home: HomeScreen(),
+
+        // Estilo de texto para el cuerpo
+        textTheme: const TextTheme(
+          bodyMedium: TextStyle(color: Colors.white),
+          bodySmall: TextStyle(color: Colors.white70),
+        ),
+
+        // Tema visual para las tarjetas (Cards)
+        cardTheme: CardTheme(
+          color: Colors.grey[900], // Fondo oscuro para tarjetas
+          elevation: 4, // Elevación para sombra
+        ),
+
+        // Tema visual para diálogos (AlertDialog, etc.)
+        dialogTheme: const DialogTheme(
+          titleTextStyle: TextStyle(color: Colors.white, fontSize: 18),
+          contentTextStyle: TextStyle(color: Colors.white70),
+        ),
+
+        // Usa Material 3 (diseño más moderno)
+        useMaterial3: true,
       ),
+
+      // Pantalla inicial que se muestra al arrancar la app
+      home: HomeScreen(),
     );
   }
 }

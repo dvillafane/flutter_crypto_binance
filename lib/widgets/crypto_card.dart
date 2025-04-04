@@ -1,65 +1,49 @@
-// Importa el paquete de Flutter para crear interfaces de usuario.
+// Importa el paquete de Flutter para widgets y estilos
 import 'package:flutter/material.dart';
-// Importa el modelo de datos de criptomonedas.
-import '../models/crypto.dart';
+// Importa el modelo que representa los detalles de una criptomoneda
+import '../models/crypto_detail.dart';
 
-// Define un widget sin estado (StatelessWidget) llamado CryptoCard.
+/// Widget sin estado (StatelessWidget) que muestra una tarjeta con la información de una criptomoneda
 class CryptoCard extends StatelessWidget {
-  // Declaración de variables finales que se reciben como parámetros.
-  final Crypto crypto; // Objeto de criptomoneda que contiene los datos a mostrar.
-  final Color priceColor; // Color del precio según su variación (verde, rojo o negro).
-  final Color cardColor; // Color del fondo de la tarjeta
+  // Instancia del modelo de datos que contiene los detalles de la criptomoneda
+  final CryptoDetail crypto;
 
-  // Constructor de la clase CryptoCard que recibe el objeto Crypto y el color del precio.
+  // Color personalizado para mostrar el precio (puede cambiar según suba o baje)
+  final Color priceColor;
+
+  // Constructor de la clase que requiere los parámetros [crypto] y [priceColor]
   const CryptoCard({
-    super.key,
-    required this.crypto,
-    required this.priceColor,
-    required this.cardColor,
+    super.key, // Permite manejar claves únicas en Flutter para widgets
+    required this.crypto, // Requiere el objeto de datos de la criptomoneda
+    required this.priceColor, // Requiere el color para el precio
   });
 
   @override
   Widget build(BuildContext context) {
     return Card(
-      // Define el margen de la tarjeta (espaciado superior/inferior y lateral).
-      margin: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 8.0),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12.0), // Bordes redondeados.
-      ),
-      elevation: 6.0,
-      color: cardColor,
+      // Color de fondo de la tarjeta (gris oscuro)
+      color: Colors.grey[900],
       child: ListTile(
-        // Muestra el logo de la criptomoneda como avatar circular.
-        leading: CircleAvatar(
-          // Se establece el color de fondo del avatar usando 'cardColor'
-          backgroundColor: cardColor,
-          child:
-              crypto.logoUrl.isNotEmpty
-                  ? Image.network(crypto.logoUrl) // Muestra la imagen del logo obtenido de internet.
-                  : const Icon(Icons.monetization_on, color: Colors.white), // Muestra el ícono predeterminado en caso de no haber logo.
+        // Muestra el logo de la criptomoneda desde la URL
+        leading: Image.network(
+          crypto.logoUrl, // URL del logo de la criptomoneda
+          width: 32, // Ancho del logo
+          height: 32, // Alto del logo
+          // Si hay un error al cargar la imagen, muestra un ícono de error
+          errorBuilder:
+              (_, __, ___) => const Icon(Icons.error, color: Colors.red),
         ),
-        // Título que muestra el nombre y símbolo de la criptomoneda.
+        // Nombre de la criptomoneda como título
         title: Text(
-          '${crypto.name} (${crypto.symbol})',
-          style: const TextStyle(
-            fontSize: 19.0, // Tamaño de fuente más grande.
-            fontWeight: FontWeight.w600, // Peso de fuente intermedio.
-            color: Color(0xDDFFFFFF),
-          ), // Estilo en negrita.
+          crypto.name,
+          style: const TextStyle(color: Colors.white), // Texto blanco
         ),
-        // Subtítulo que muestra el precio de la criptomoneda con animación.
-        subtitle: AnimatedDefaultTextStyle(
-          // Duración de la animación de cambio de estilo (color).
-          duration: const Duration(milliseconds: 400),
-          // Estilo del texto del precio con el color variable según la variación.
+        // Precio en USD como subtítulo, formateado a dos decimales
+        subtitle: Text(
+          '\$${crypto.priceUsd.toStringAsFixed(2)} USD',
           style: TextStyle(
-            fontSize: 14, // Tamaño de fuente.
-            fontWeight: FontWeight.bold, // Texto en negrita.
-            color:
-                priceColor, // Color dinámico que refleja la variación del precio.
-          ),
-          // Texto que muestra el precio formateado con dos decimales.
-          child: Text('\$${crypto.price.toStringAsFixed(2)}'),
+            color: priceColor,
+          ), // Color dinámico según suba o baje
         ),
       ),
     );

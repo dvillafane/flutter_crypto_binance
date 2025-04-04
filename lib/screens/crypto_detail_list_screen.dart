@@ -1,114 +1,214 @@
-// Importa los paquetes necesarios para la interfaz y el manejo de estados.
+// Importamos los paquetes necesarios
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import '../blocs/crypto_bloc.dart';
-import '../widgets/crypto_details_card.dart';
-import 'crypto_detail_screen.dart';
+import 'package:flutter_bloc/flutter_bloc.dart'; // Para usar Bloc en la interfaz
+import '../blocs/crypto_bloc.dart'; // Bloc que maneja el estado de las criptos
+import '../models/crypto_detail.dart'; // Modelo de detalle de criptomoneda
 
-/// Pantalla que muestra una lista de criptomonedas en forma de cuadrícula.
+// Pantalla de lista de detalles de criptomonedas
 class CryptoDetailListScreen extends StatefulWidget {
   const CryptoDetailListScreen({super.key});
 
   @override
-  State<CryptoDetailListScreen> createState() => _CryptoDetailListScreenState();
+  CryptoDetailListScreenState createState() => CryptoDetailListScreenState();
 }
 
-class _CryptoDetailListScreenState extends State<CryptoDetailListScreen> {
-  // Variable que almacena la consulta de búsqueda ingresada por el usuario.
-  String _searchQuery = '';
+class CryptoDetailListScreenState extends State<CryptoDetailListScreen> {
+  String searchQuery = ""; // Variable para guardar el texto de búsqueda
+  final TextEditingController _searchController =
+      TextEditingController(); // Controlador del TextField
+
+  @override
+  void dispose() {
+    _searchController.dispose(); // Liberamos el controlador cuando ya no se use
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // Configura el color de fondo de la pantalla en negro.
-      backgroundColor: Colors.black,
-      body: Padding(
-        padding: const EdgeInsets.all(8.0), // Espaciado alrededor del contenido.
-        child: Column(
-          children: [
-            // Campo de texto para buscar criptomonedas.
-            TextField(
-              style: const TextStyle(color: Colors.white), // Texto en color blanco.
-              decoration: InputDecoration(
-                hintText: 'Buscar criptomoneda...', // Texto de sugerencia.
-                hintStyle: const TextStyle(color: Colors.white70), // Color del texto de sugerencia.
-                prefixIcon: const Icon(Icons.search, color: Colors.white70), // Icono de búsqueda.
-                filled: true, // Campo de texto con fondo lleno.
-                fillColor: Colors.grey[800], // Color de fondo del campo.
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(20), // Bordes redondeados.
-                  borderSide: BorderSide.none, // Sin borde visible.
+      appBar: AppBar(
+        title: Padding(
+          padding: const EdgeInsets.only(top: 8.0),
+          child: Row(
+            children: [
+              // Campo de búsqueda
+              Expanded(
+                child: TextField(
+                  controller: _searchController,
+                  style: const TextStyle(color: Colors.white),
+                  decoration: InputDecoration(
+                    hintText: "Buscar criptomoneda...",
+                    hintStyle: const TextStyle(color: Colors.white70),
+                    prefixIcon: const Icon(Icons.search, color: Colors.white70),
+                    filled: true,
+                    fillColor: Colors.grey[800],
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(20),
+                      borderSide: BorderSide.none,
+                    ),
+                  ),
+                  onChanged: (value) {
+                    // Actualiza el estado cuando el usuario escribe
+                    setState(() {
+                      searchQuery = value;
+                    });
+                  },
                 ),
               ),
-              // Actualiza la consulta de búsqueda cada vez que el usuario escribe.
-              onChanged: (query) {
-                setState(() {
-                  _searchQuery = query.toLowerCase(); // Convierte el texto a minúsculas.
-                });
-              },
-            ),
-            const SizedBox(height: 8), // Espaciado entre el campo de búsqueda y la lista.
+              const SizedBox(width: 8),
 
-            // Se utiliza un BlocBuilder para escuchar los cambios de estado del BLoC.
-            Expanded(
-              child: BlocBuilder<CryptoBloc, CryptoState>(
+              // Botón para conectar o desconectar el WebSocket
+              BlocBuilder<CryptoBloc, CryptoState>(
                 builder: (context, state) {
-                  // Muestra un indicador de carga mientras se obtienen los datos.
-                  if (state is CryptoLoading) {
-                    return const Center(child: CircularProgressIndicator());
-                  } 
-                  // Muestra la lista de criptomonedas cargadas.
-                  else if (state is CryptoLoaded) {
-                    // Filtra las criptomonedas según la consulta de búsqueda.
-                    final filteredCryptos = state.cryptos.where((crypto) =>
-                        crypto.name.toLowerCase().contains(_searchQuery) || // Filtra por nombre.
-                        crypto.symbol.toLowerCase().contains(_searchQuery)   // Filtra por símbolo.
-                    ).toList();
-
-                    // Muestra las criptomonedas en una cuadrícula.
-                    return GridView.builder(
-                      padding: const EdgeInsets.all(8.0), // Espaciado interno.
-                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 2, // Número de columnas en la cuadrícula.
-                        childAspectRatio: 1, // Relación de aspecto de los elementos.
-                        crossAxisSpacing: 8, // Espaciado horizontal entre elementos.
-                        mainAxisSpacing: 8, // Espaciado vertical entre elementos.
+                  if (state is CryptoLoaded) {
+                    return IconButton(
+                      icon: Icon(
+                        state.isWebSocketConnected
+                            ? Icons.pause
+                            : Icons.play_arrow,
+                        color: Colors.white,
                       ),
-                      itemCount: filteredCryptos.length, // Número de elementos a mostrar.
-                      itemBuilder: (context, index) {
-                        final crypto = filteredCryptos[index];
-                        return CryptoDetailsCard(
-                          crypto: crypto,
-                          onTap: () {
-                            // Navega a la pantalla de detalles de la criptomoneda seleccionada.
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => CryptoDetailScreen(assetId: crypto.id),
-                              ),
-                            );
-                          },
-                        );
+                      onPressed: () {
+                        // Alternar entre conexión y desconexión
+                        if (state.isWebSocketConnected) {
+                          context.read<CryptoBloc>().add(DisconnectWebSocket());
+                        } else {
+                          context.read<CryptoBloc>().add(ConnectWebSocket());
+                        }
                       },
                     );
-                  } 
-                  // Muestra un mensaje de error si ocurre un problema al cargar los datos.
-                  else if (state is CryptoError) {
-                    return Center(
-                      child: Text(
-                        'Error: ${state.message}', // Muestra el mensaje de error.
-                        style: const TextStyle(color: Colors.red), // Texto en color rojo.
-                      ),
-                    );
                   }
-                  // Devuelve un contenedor vacío si no se cumple ninguna condición.
-                  return Container();
+                  return const SizedBox.shrink(); // No muestra nada si el estado no es el correcto
                 },
+              ),
+            ],
+          ),
+        ),
+      ),
+
+      // Cuerpo de la pantalla: Lista de criptomonedas
+      body: BlocBuilder<CryptoBloc, CryptoState>(
+        builder: (context, state) {
+          if (state is CryptoLoading) {
+            // Muestra un loader mientras se cargan los datos
+            return const Center(child: CircularProgressIndicator());
+          } else if (state is CryptoLoaded) {
+            // Filtra las criptomonedas según la búsqueda
+            List<CryptoDetail> filteredCryptos = state.cryptos;
+            if (searchQuery.isNotEmpty) {
+              filteredCryptos =
+                  filteredCryptos.where((crypto) {
+                    return crypto.name.toLowerCase().contains(
+                      searchQuery.toLowerCase(),
+                    );
+                  }).toList();
+            }
+
+            // Lista de criptomonedas renderizadas
+            return ListView.builder(
+              itemCount: filteredCryptos.length,
+              itemBuilder: (context, index) {
+                final detail = filteredCryptos[index];
+                return Card(
+                  color: Colors.grey[900],
+                  child: ListTile(
+                    leading: Image.network(
+                      detail.logoUrl,
+                      width: 32,
+                      height: 32,
+                      errorBuilder:
+                          (_, __, ___) =>
+                              const Icon(Icons.error, color: Colors.red),
+                    ),
+                    title: Text(
+                      detail.name,
+                      style: const TextStyle(color: Colors.white),
+                    ),
+                    subtitle: AnimatedDefaultTextStyle(
+                      duration: const Duration(milliseconds: 350),
+                      style: TextStyle(
+                        color:
+                            state.priceColors[detail.symbol] ?? Colors.white70,
+                      ),
+                      child: Text(
+                        '\$${detail.priceUsd.toStringAsFixed(2)} USD',
+                      ),
+                    ),
+                    onTap:
+                        () => _showCryptoDetailDialog(
+                          context,
+                          detail,
+                        ), // Al tocar muestra los detalles
+                  ),
+                );
+              },
+            );
+          } else if (state is CryptoError) {
+            // Muestra un mensaje de error si falla la carga
+            return Center(
+              child: Text(
+                state.message,
+                style: const TextStyle(color: Colors.red),
+              ),
+            );
+          }
+
+          // Si no hay estado reconocido, muestra un contenedor vacío
+          return Container();
+        },
+      ),
+    );
+  }
+
+  // Función que muestra un diálogo con detalles de la criptomoneda
+  void _showCryptoDetailDialog(BuildContext context, CryptoDetail detail) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: Colors.grey[900],
+          title: Row(
+            children: [
+              Image.network(
+                detail.logoUrl,
+                width: 32,
+                height: 32,
+                errorBuilder:
+                    (_, __, ___) => const Icon(Icons.error, color: Colors.red),
+              ),
+              const SizedBox(width: 8),
+              Text(detail.name, style: const TextStyle(color: Colors.white)),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Símbolo: ${detail.symbol}',
+                style: const TextStyle(color: Colors.white70),
+              ),
+              Text(
+                'Precio: \$${detail.priceUsd.toStringAsFixed(2)} USD',
+                style: const TextStyle(color: Colors.white70),
+              ),
+              Text(
+                'Volumen 24h: \$${detail.volumeUsd24Hr.toStringAsFixed(2)} USD',
+                style: const TextStyle(color: Colors.white70),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text(
+                'Cerrar',
+                style: TextStyle(color: Colors.white),
               ),
             ),
           ],
-        ),
-      ),
+        );
+      },
     );
   }
 }

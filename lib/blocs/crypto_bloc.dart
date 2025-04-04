@@ -1,51 +1,59 @@
-// Importaciones necesarias para el funcionamiento del BLoC y la gestión de eventos.
+// Importación de paquetes necesarios
 import 'dart:async';
 import 'package:bloc/bloc.dart';
 import 'package:flutter/material.dart';
 import 'package:equatable/equatable.dart';
-import '../models/crypto.dart';
-import '../services/crypto_service.dart';
+import '../models/crypto_detail.dart';
+import '../services/crypto_detail_service.dart';
 import '../services/websocket_prices_service.dart';
 
-// Definición de eventos para el BLoC.
+/// ----------------------------
+/// DEFINICIÓN DE EVENTOS
+/// ----------------------------
+
+// Clase base para los eventos del BLoC
 abstract class CryptoEvent extends Equatable {
   const CryptoEvent();
   @override
   List<Object?> get props => [];
 }
 
-// Evento para cargar las criptomonedas al iniciar la aplicación.
+// Evento para cargar criptomonedas (desde caché o API)
 class LoadCryptos extends CryptoEvent {}
 
-// Evento que se dispara cuando se actualizan los precios desde el WebSocket.
+// Evento que se dispara cuando llegan nuevos precios del WebSocket
 class PricesUpdated extends CryptoEvent {
-  final Map<String, double>
-  prices; // Diccionario con el precio actualizado de cada criptomoneda.
+  final Map<String, double> prices;
   const PricesUpdated({required this.prices});
   @override
   List<Object?> get props => [prices];
 }
 
-// Eventos para conectar y desconectar el WebSocket.
+// Evento para iniciar la conexión al WebSocket
 class ConnectWebSocket extends CryptoEvent {}
 
+// Evento para desconectar el WebSocket
 class DisconnectWebSocket extends CryptoEvent {}
 
-// Definición de los diferentes estados que puede tener el BLoC.
+/// ----------------------------
+/// DEFINICIÓN DE ESTADOS
+/// ----------------------------
+
+// Clase base para los estados del BLoC
 abstract class CryptoState extends Equatable {
   const CryptoState();
   @override
   List<Object?> get props => [];
 }
 
-// Estado mientras se están cargando las criptomonedas.
+// Estado mientras se cargan las criptomonedas
 class CryptoLoading extends CryptoState {}
 
+// Estado cuando las criptomonedas han sido cargadas correctamente
 class CryptoLoaded extends CryptoState {
-  final List<Crypto> cryptos; // Lista de criptomonedas cargadas.
-  final Map<String, Color>
-  priceColors; // Mapa que relaciona el ID con el color según la variación de precio.
-  final bool isWebSocketConnected; // Estado de la conexión WebSocket.
+  final List<CryptoDetail> cryptos;
+  final Map<String, Color> priceColors;
+  final bool isWebSocketConnected;
 
   const CryptoLoaded({
     required this.cryptos,
@@ -57,7 +65,7 @@ class CryptoLoaded extends CryptoState {
   List<Object?> get props => [cryptos, priceColors, isWebSocketConnected];
 }
 
-// Estado de error si ocurre algún problema al cargar los datos.
+// Estado de error
 class CryptoError extends CryptoState {
   final String message;
   const CryptoError({required this.message});
@@ -65,110 +73,121 @@ class CryptoError extends CryptoState {
   List<Object?> get props => [message];
 }
 
-// Implementación del BLoC para manejar los eventos y estados relacionados con criptomonedas.
-class CryptoBloc extends Bloc<CryptoEvent, CryptoState> {
-  final CryptoService _cryptoService; // Servicio para obtener criptomonedas.
-  final WebSocketPricesService
-  _pricesService; // Servicio para obtener precios en tiempo real.
-  final Map<String, double> _previousPrices =
-      {}; // Precios anteriores para comparar.
-  StreamSubscription<Map<String, double>>?
-  _pricesSubscription; // Suscripción al flujo de precios.
+/// ----------------------------
+/// DEFINICIÓN DEL BLoC
+/// ----------------------------
 
-  // Constructor del BLoC, inicializa servicios y el estado inicial (cargando).
+class CryptoBloc extends Bloc<CryptoEvent, CryptoState> {
+  final CryptoDetailService _cryptoService;
+  final WebSocketPricesService _pricesService;
+
+  // Para almacenar precios anteriores y comparar si subieron o bajaron
+  final Map<String, double> _previousPrices = {};
+
+  // Suscripción al stream del WebSocket
+  StreamSubscription<Map<String, double>>? _pricesSubscription;
+
   CryptoBloc({
-    required CryptoService cryptoService,
+    required CryptoDetailService cryptoService,
     required WebSocketPricesService pricesService,
   }) : _cryptoService = cryptoService,
        _pricesService = pricesService,
        super(CryptoLoading()) {
-    // Manejadores de eventos registrados.
+    // Registramos los handlers de eventos
     on<LoadCryptos>(_onLoadCryptos);
     on<PricesUpdated>(_onPricesUpdated);
     on<ConnectWebSocket>(_onConnectWebSocket);
     on<DisconnectWebSocket>(_onDisconnectWebSocket);
 
-    // Inicia el proceso de carga al crear el BLoC.
+    // Iniciamos cargando criptomonedas
     add(LoadCryptos());
   }
-  // Método para cargar las criptomonedas desde el servicio.
+
+  // Manejo del evento LoadCryptos
   Future<void> _onLoadCryptos(
     LoadCryptos event,
     Emitter<CryptoState> emit,
   ) async {
     try {
-      debugPrint('Cargando criptomonedas...');
-      final cryptos = await _cryptoService.fetchCryptos();
-      cryptos.sort(
-        (a, b) => b.price.compareTo(a.price),
-      ); // Ordena de mayor a menor precio.
+      debugPrint('Cargando criptomonedas desde caché...');
+      List<CryptoDetail> cryptos =
+          await _cryptoService.getCachedCryptoDetails();
 
-      // Guarda los precios iniciales.
-      for (var crypto in cryptos) {
-        _previousPrices[crypto.id] = crypto.price;
+      // Si el caché está vacío, se hace la petición a la API
+      if (cryptos.isEmpty) {
+        debugPrint('Caché vacío, cargando desde API...');
+        cryptos = await _cryptoService.fetchTop100CryptoDetails();
+      } else {
+        debugPrint('Usando datos en caché');
       }
 
-      // Conexión inicial al WebSocket para recibir precios en tiempo real.
-      debugPrint('Conectando WebSocket al inicio...');
+      // Ordenamos las criptos por precio (descendente)
+      cryptos.sort((a, b) => b.priceUsd.compareTo(a.priceUsd));
+
+      // Guardamos los precios iniciales
+      for (var crypto in cryptos) {
+        _previousPrices[crypto.symbol] = crypto.priceUsd;
+      }
+
+      // Conectamos al WebSocket para recibir precios en tiempo real
+      debugPrint('Conectando WebSocket...');
       _pricesService.connect();
       _pricesSubscription = _pricesService.pricesStream.listen(
-        (prices) {
-          debugPrint('Precios recibidos en suscripción: $prices');
-          add(PricesUpdated(prices: prices));
-        },
-        onError: (error) {
-          debugPrint('Error en WebSocket: $error');
-          add(DisconnectWebSocket());
-        },
+        (prices) =>
+            add(PricesUpdated(prices: prices)), // Se dispara PricesUpdated
+        onError: (error) => add(DisconnectWebSocket()), // Manejo de errores
       );
 
-      // Emite el estado con las criptomonedas cargadas.
       emit(
         CryptoLoaded(
           cryptos: cryptos,
-          priceColors: {for (var e in cryptos) e.id: Colors.black},
+          priceColors: {for (var e in cryptos) e.symbol: Colors.white},
           isWebSocketConnected: true,
         ),
       );
-      debugPrint('Estado inicial emitido con ${cryptos.length} criptomonedas');
     } catch (e) {
       debugPrint('Error al cargar criptomonedas: $e');
       emit(CryptoError(message: e.toString()));
     }
   }
 
-  // Método para actualizar los precios en tiempo real.
+  // Manejo del evento PricesUpdated (cambios en precios)
   void _onPricesUpdated(PricesUpdated event, Emitter<CryptoState> emit) {
     final currentState = state;
     if (currentState is CryptoLoaded) {
-      debugPrint('Actualizando precios con: ${event.prices}');
       final Map<String, Color> updatedColors = {};
-      // Actualiza el precio y el color según la variación (subida/bajada).
-      final List<Crypto> updatedCryptos =
+      final List<CryptoDetail> updatedCryptos =
           currentState.cryptos.map((crypto) {
-            String binanceSymbol = "${crypto.symbol.toUpperCase()}USDT";
-            final double oldPrice = _previousPrices[crypto.id] ?? crypto.price;
-            final double newPrice =
-                event.prices[binanceSymbol.toLowerCase()] ?? crypto.price;
-            Color color = const Color(0xFFFFFFFF);
+            final binanceSymbol = "${crypto.symbol}USDT".toLowerCase();
+            final oldPrice = _previousPrices[crypto.symbol] ?? crypto.priceUsd;
+            final newPrice = event.prices[binanceSymbol] ?? crypto.priceUsd;
+
+            // Determinamos el color según si el precio subió o bajó
+            Color color = Colors.white;
             if (newPrice > oldPrice) {
               color = Colors.green;
             } else if (newPrice < oldPrice) {
               color = Colors.red;
             }
-            updatedColors[crypto.id] = color;
-            _previousPrices[crypto.id] = newPrice;
-            // Retorna el objeto actualizado.
-            return Crypto(
-              id: crypto.id,
-              name: crypto.name,
+
+            // Actualizamos color y precio previo
+            updatedColors[crypto.symbol] = color;
+            _previousPrices[crypto.symbol] = newPrice;
+
+            // Creamos una nueva instancia actualizada
+            return CryptoDetail(
               symbol: crypto.symbol,
-              price: newPrice,
+              name: crypto.name,
+              priceUsd: newPrice,
+              volumeUsd24Hr: crypto.volumeUsd24Hr,
               logoUrl: crypto.logoUrl,
             );
           }).toList();
-      // Actualiza el estado con los nuevos precios y colores.
-      updatedCryptos.sort((a, b) => b.price.compareTo(a.price));
+
+      // Reordenamos después de la actualización
+      updatedCryptos.sort((a, b) => b.priceUsd.compareTo(a.priceUsd));
+
+      // Emitimos nuevo estado
       emit(
         CryptoLoaded(
           cryptos: updatedCryptos,
@@ -176,11 +195,10 @@ class CryptoBloc extends Bloc<CryptoEvent, CryptoState> {
           isWebSocketConnected: currentState.isWebSocketConnected,
         ),
       );
-      debugPrint('Estado actualizado con nuevos precios');
     }
   }
 
-  // Método para conectar manualmente el WebSocket.
+  // Conectar WebSocket si no está conectado
   void _onConnectWebSocket(ConnectWebSocket event, Emitter<CryptoState> emit) {
     if (state is CryptoLoaded) {
       final currentState = state as CryptoLoaded;
@@ -188,13 +206,10 @@ class CryptoBloc extends Bloc<CryptoEvent, CryptoState> {
         try {
           _pricesService.connect();
           _pricesSubscription = _pricesService.pricesStream.listen(
-            (prices) {
-              add(PricesUpdated(prices: prices));
-            },
-            onError: (error) {
-              add(DisconnectWebSocket());
-            },
+            (prices) => add(PricesUpdated(prices: prices)),
+            onError: (error) => add(DisconnectWebSocket()),
           );
+
           emit(
             CryptoLoaded(
               cryptos: currentState.cryptos,
@@ -202,7 +217,6 @@ class CryptoBloc extends Bloc<CryptoEvent, CryptoState> {
               isWebSocketConnected: true,
             ),
           );
-          debugPrint('WebSocket conectado manualmente');
         } catch (e) {
           emit(CryptoError(message: "Error al conectar WebSocket: $e"));
         }
@@ -210,7 +224,7 @@ class CryptoBloc extends Bloc<CryptoEvent, CryptoState> {
     }
   }
 
-  // Método para desconectar el WebSocket.
+  // Desconectar el WebSocket si está conectado
   void _onDisconnectWebSocket(
     DisconnectWebSocket event,
     Emitter<CryptoState> emit,
@@ -227,17 +241,15 @@ class CryptoBloc extends Bloc<CryptoEvent, CryptoState> {
             isWebSocketConnected: false,
           ),
         );
-        debugPrint('WebSocket desconectado manualmente');
       }
     }
   }
 
+  // Cancelamos suscripciones y limpiamos recursos al cerrar el BLoC
   @override
   Future<void> close() {
-    // Cancela la suscripción y libera recursos al cerrar el BLoC.
     _pricesSubscription?.cancel();
     _pricesService.dispose();
-    debugPrint('BLoC cerrado y recursos liberados');
     return super.close();
   }
 }

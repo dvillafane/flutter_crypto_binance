@@ -1,32 +1,102 @@
-// Importa el paquete 'dart:convert' para manejar la codificación y decodificación de JSON.
-import 'dart:convert';
-// Importa el paquete 'http' para realizar solicitudes HTTP.
-import 'package:http/http.dart' as http;
-// Importa el modelo que representa los detalles de la criptomoneda.
-import '../models/crypto_detail.dart';
+// Importaciones necesarias
+import 'dart:convert'; // Para decodificar la respuesta JSON
+import 'package:http/http.dart'
+    as http; // Cliente HTTP para hacer solicitudes a la API
+import 'package:cloud_firestore/cloud_firestore.dart'; // Firestore para almacenamiento en la nube
+import 'package:flutter_dotenv/flutter_dotenv.dart'; // Para acceder a variables de entorno
+import '../models/crypto_detail.dart'; // Modelo de datos
 
-/// Servicio encargado de obtener detalles específicos de una criptomoneda desde la API.
+// Servicio para obtener detalles de criptomonedas
 class CryptoDetailService {
-  // URL base de la API CoinCap para obtener detalles de criptomonedas.
-  final String baseUrl = 'https://api.coincap.io/v2/assets';
+  // Instancia de Firestore
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  /// Método asíncrono que obtiene los detalles de una criptomoneda específica
-  /// mediante su identificador (assetId).
-  Future<CryptoDetail> fetchCryptoDetail(String assetId) async {
-    // Construye la URL completa concatenando la base con el identificador de la criptomoneda.
-    final url = Uri.parse('$baseUrl/$assetId');
-    // Realiza una solicitud GET a la API para obtener los detalles.
-    final response = await http.get(url);
+  // URL base de la API de CoinMarketCap
+  final String coinMarketCapBaseUrl = 'https://pro-api.coinmarketcap.com';
 
-    // Verifica si la solicitud fue exitosa (código 200).
+  // Clave API obtenida desde las variables de entorno
+  final String apiKey = dotenv.env['API_KEY'] ?? 'default_key'; // Fallback si no se encuentra
+
+  /// Método para obtener las 100 criptomonedas principales desde CoinMarketCap
+  Future<List<CryptoDetail>> fetchTop100CryptoDetails() async {
+    // Encabezado con la API key
+    final headers = {'X-CMC_PRO_API_KEY': apiKey};
+
+    // Construye la URL con parámetros para obtener el top 100
+    final listingsUrl = Uri.parse(
+      '$coinMarketCapBaseUrl/v1/cryptocurrency/listings/latest?start=1&limit=100&convert=USD',
+    );
+
+    // Solicitud GET a la API
+    final response = await http.get(listingsUrl, headers: headers);
+
+    // Si la solicitud fue exitosa (código 200)
     if (response.statusCode == 200) {
-      // Decodifica el cuerpo de la respuesta JSON.
-      final data = json.decode(response.body);
-      // Extrae los datos específicos de la criptomoneda desde el campo 'data'.
-      return CryptoDetail.fromJson(data['data']);
+      // Decodifica el cuerpo de la respuesta
+      final listingsData = json.decode(response.body)['data'];
+      final List<CryptoDetail> cryptoDetails = [];
+
+      // Recorre cada criptomoneda recibida
+      for (final coinData in listingsData) {
+        final symbol = coinData['symbol'].toString().toUpperCase(); // Ej. BTC
+        final docRef = _firestore
+            .collection('crypto_details')
+            .doc(symbol); // Referencia al documento Firestore
+
+        // Crea el objeto CryptoDetail con los datos obtenidos
+        final cryptoDetail = CryptoDetail(
+          symbol: symbol,
+          name: coinData['name'] ?? symbol,
+          priceUsd:
+              (coinData['quote']['USD']['price'] as num?)?.toDouble() ?? 0,
+          volumeUsd24Hr:
+              (coinData['quote']['USD']['volume_24h'] as num?)?.toDouble() ?? 0,
+          logoUrl:
+              'https://s2.coinmarketcap.com/static/img/coins/64x64/${coinData["id"]}.png',
+        );
+
+        // Guarda o actualiza la info en Firestore con timestamp
+        await docRef.set({
+          'symbol': cryptoDetail.symbol,
+          'name': cryptoDetail.name,
+          'priceUsd': cryptoDetail.priceUsd,
+          'volumeUsd24Hr': cryptoDetail.volumeUsd24Hr,
+          'logoUrl': cryptoDetail.logoUrl,
+          'timestamp': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
+
+        // Añade a la lista de resultados
+        cryptoDetails.add(cryptoDetail);
+      }
+
+      // Devuelve la lista de objetos CryptoDetail
+      return cryptoDetails;
     } else {
-      // Lanza una excepción en caso de error con el código de estado.
-      throw Exception('Error al obtener detalles de la criptomoneda: ${response.statusCode}');
+      // Si hubo error en la solicitud, lanza una excepción con el código de estado
+      throw Exception(
+        'Error al obtener datos de CoinMarketCap: ${response.statusCode}',
+      );
     }
+  }
+
+  /// Método para obtener criptomonedas almacenadas en caché (Firestore)
+  Future<List<CryptoDetail>> getCachedCryptoDetails() async {
+    // Obtiene todos los documentos de la colección `crypto_details`
+    final snapshot = await _firestore.collection('crypto_details').get();
+    final List<CryptoDetail> cachedDetails = [];
+
+    for (final doc in snapshot.docs) {
+      final data = doc.data();
+      final timestamp = data['timestamp'] as Timestamp?;
+
+      // Filtra solo los datos con menos de 12 horas de antigüedad (720 minutos)
+      if (timestamp != null &&
+          DateTime.now().difference(timestamp.toDate()).inMinutes < 720) {
+        cachedDetails.add(CryptoDetail.fromFirestore(data));
+      }
+    }
+
+    // Retorna máximo 100 criptomonedas válidas en caché
+    return cachedDetails.take(100).toList();
   }
 }
