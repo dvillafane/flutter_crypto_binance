@@ -1,6 +1,8 @@
 // Importa el paquete material de Flutter, que provee componentes de interfaz gráfica.
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_crypto_binance/firebase_options.dart';
 // Importa la pantalla principal de la aplicación.
 import 'screens/home_screen.dart';
 import 'blocs/crypto_bloc.dart';
@@ -9,7 +11,13 @@ import 'services/websocket_prices_service.dart';
 
 // Función principal de la aplicación, el punto de entrada.
 // Ejecuta la aplicación pasando el widget MyApp.
-void main() => runApp(MyApp());
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+  runApp(MyApp());
+}
 
 /// Widget principal de la aplicación, de tipo StatelessWidget.
 class MyApp extends StatelessWidget {
