@@ -1,10 +1,12 @@
 // Importaciones necesarias
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart'; // Para manejar estados con BLoC
 import '../blocs/crypto_bloc.dart';
 import '../services/crypto_detail_service.dart';
 import '../services/websocket_prices_service.dart';
 import 'crypto_detail_list_screen.dart';
+import 'auth_screen/login_screen.dart';
 
 /// Pantalla principal de la app
 class HomeScreen extends StatelessWidget {
@@ -23,6 +25,19 @@ class HomeScreen extends StatelessWidget {
           fit: BoxFit.contain,
         ),
         centerTitle: true, // Centra el logo en la AppBar
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout, color: Colors.white),
+            onPressed: () {
+              FirebaseAuth.instance.signOut();
+              Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute(builder: (context) => const LoginPage()),
+                (route) => false,
+              );
+            },
+          ),
+        ],
       ),
 
       // Cuerpo de la pantalla envuelto en un BlocProvider
@@ -30,6 +45,7 @@ class HomeScreen extends StatelessWidget {
         // Crea una instancia del CryptoBloc y lo provee a los widgets hijos
         create:
             (_) => CryptoBloc(
+              userId: FirebaseAuth.instance.currentUser!.uid,
               cryptoService:
                   CryptoDetailService(), // Servicio HTTP para obtener detalles de criptos
               pricesService:
