@@ -1,16 +1,12 @@
 // Importaciones necesarias
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart'; // Para manejar estados con BLoC
-
-// Importación del BLoC que maneja las criptomonedas
-import '../blocs/crypto_bloc.dart';
-
-// Servicios que consultan la data de las criptos y los precios en tiempo real
+import '../blocs/crypto/crypto_bloc.dart';
 import '../services/crypto_detail_service.dart';
 import '../services/websocket_prices_service.dart';
-
-// Pantalla que muestra la lista de detalles de criptomonedas
 import 'crypto_detail_list_screen.dart';
+import 'auth_screen/login_screen.dart';
 
 /// Pantalla principal de la app
 class HomeScreen extends StatelessWidget {
@@ -19,18 +15,29 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // AppBar superior con título estilizado
+      // AppBar superior con logo en lugar de texto
       appBar: AppBar(
         backgroundColor: Colors.black,
-        title: const Text(
-          'CRIPTOMONEDAS',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
-          ),
+        title: Image.asset(
+          'assets/icon/app_icon.png',
+          width: 40,
+          height: 40,
+          fit: BoxFit.contain,
         ),
-        centerTitle: true, // Centra el título en la AppBar
+        centerTitle: true, // Centra el logo en la AppBar
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout, color: Colors.white),
+            onPressed: () {
+              FirebaseAuth.instance.signOut();
+              Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute(builder: (context) => const LoginPage()),
+                (route) => false,
+              );
+            },
+          ),
+        ],
       ),
 
       // Cuerpo de la pantalla envuelto en un BlocProvider
@@ -38,13 +45,14 @@ class HomeScreen extends StatelessWidget {
         // Crea una instancia del CryptoBloc y lo provee a los widgets hijos
         create:
             (_) => CryptoBloc(
+              userId: FirebaseAuth.instance.currentUser!.uid,
               cryptoService:
                   CryptoDetailService(), // Servicio HTTP para obtener detalles de criptos
               pricesService:
                   WebSocketPricesService(), // Servicio WebSocket para precios en tiempo real
             ),
         child:
-            CryptoDetailListScreen(), // Widget hijo que consume el BLoC y muestra la lista
+            const CryptoDetailListScreen(), // Widget hijo que consume el BLoC y muestra la lista
       ),
     );
   }

@@ -7,7 +7,7 @@ import 'package:flutter_crypto_binance/firebase_options.dart';
 // Importa flutter_dotenv para manejar variables de entorno
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 // Importa la pantalla principal de la aplicación
-import 'screens/home_screen.dart';
+import 'screens/auth_screen/login_screen.dart';
 
 /// Punto de entrada principal de la aplicación Flutter
 void main() async {
@@ -73,7 +73,7 @@ class MyApp extends StatelessWidget {
       ),
 
       // Pantalla inicial que se muestra al arrancar la app
-      home: HomeScreen(),
+      home: LoginPage(),
     );
   }
 }
