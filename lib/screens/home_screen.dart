@@ -15,31 +15,65 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // AppBar superior con logo en lugar de texto
+      // Estructura básica de la pantalla
       appBar: AppBar(
-        backgroundColor: Colors.black,
+        backgroundColor: Colors.black, // Color de fondo negro para la AppBar
         title: Image.asset(
-          'assets/icon/app_icon.png',
+          'assets/icon/app_icon.png', // Logo de la aplicación en la AppBar
           width: 40,
           height: 40,
-          fit: BoxFit.contain,
+          fit: BoxFit.contain, // Ajuste del logo para que no se deforme
         ),
         centerTitle: true, // Centra el logo en la AppBar
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout, color: Colors.white),
-            onPressed: () {
-              FirebaseAuth.instance.signOut();
-              Navigator.pushAndRemoveUntil(
-                context,
-                MaterialPageRoute(builder: (context) => const LoginPage()),
-                (route) => false,
-              );
-            },
-          ),
-        ],
       ),
-
+      drawer: Drawer(
+        // Menú lateral (Drawer)
+        child: Container(
+          color: Colors.grey[900], // Color de fondo oscuro para el menú
+          child: ListView(
+            padding:
+                EdgeInsets
+                    .zero, // Sin padding para que los elementos inicien desde arriba
+            children: <Widget>[
+              const DrawerHeader(
+                // Encabezado del menú lateral
+                decoration: BoxDecoration(
+                  color: Colors.black, // Fondo negro para el encabezado
+                ),
+                child: Text(
+                  'Menú',
+                  style: TextStyle(
+                    color: Colors.white, // Texto blanco
+                    fontSize: 24, // Tamaño del texto
+                  ),
+                ),
+              ),
+              ListTile(
+                // Opción para cerrar sesión
+                leading: const Icon(
+                  Icons.exit_to_app,
+                  color: Colors.white,
+                ), // Ícono de salir
+                title: const Text(
+                  'Cerrar sesión',
+                  style: TextStyle(color: Colors.white), // Texto blanco
+                ),
+                onTap: () {
+                  FirebaseAuth.instance.signOut(); // Cierra sesión con Firebase
+                  Navigator.pushAndRemoveUntil(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const LoginPage(),
+                    ), // Redirige a la pantalla de login
+                    (route) =>
+                        false, // Elimina todas las rutas anteriores para evitar volver atrás
+                  ); // Redirige a la pantalla de login
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
       // Cuerpo de la pantalla envuelto en un BlocProvider
       body: BlocProvider(
         // Crea una instancia del CryptoBloc y lo provee a los widgets hijos

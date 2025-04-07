@@ -86,7 +86,7 @@ class ForgotPasswordScreen extends StatelessWidget {
                                 : () {
                                   context.read<ForgotPasswordBloc>().add(
                                     ForgotPasswordSubmitted(
-                                      email: emailController.text,
+                                      email: emailController.text.trim(),
                                     ),
                                   );
                                 },

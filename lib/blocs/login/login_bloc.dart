@@ -9,19 +9,23 @@ part 'login_state.dart';
 class LoginBloc extends Bloc<LoginEvent, LoginState> {
   final FirebaseAuth _auth;
   LoginBloc({FirebaseAuth? auth})
-      : _auth = auth ?? FirebaseAuth.instance,
-        super(LoginInitial()) {
+    : _auth = auth ?? FirebaseAuth.instance,
+      super(LoginInitial()) {
     on<LoginSubmitted>(_onLoginSubmitted);
     on<LoginGoogleSubmitted>(_onLoginGoogleSubmitted);
   }
 
   Future<void> _onLoginSubmitted(
-      LoginSubmitted event, Emitter<LoginState> emit) async {
+    LoginSubmitted event,
+    Emitter<LoginState> emit,
+  ) async {
+    final email = event.email.trim();
+    final password = event.password;
     emit(LoginLoading());
     try {
       final userCredential = await _auth.signInWithEmailAndPassword(
-        email: event.email,
-        password: event.password,
+        email: email,
+        password: password,
       );
       if (userCredential.user?.emailVerified ?? false) {
         emit(LoginSuccess());
@@ -56,20 +60,28 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
   }
 
   Future<void> _onLoginGoogleSubmitted(
-      LoginGoogleSubmitted event, Emitter<LoginState> emit) async {
+    LoginGoogleSubmitted event,
+    Emitter<LoginState> emit,
+  ) async {
     emit(LoginLoading());
     try {
       final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
+      if (googleUser == null) {
+        emit(const LoginFailure("Inicio de sesión con Google cancelado"));
+        return;
+      }
       final GoogleSignInAuthentication googleAuth =
-          await googleUser!.authentication;
+          await googleUser.authentication;
       final credential = GoogleAuthProvider.credential(
         accessToken: googleAuth.accessToken,
         idToken: googleAuth.idToken,
       );
       await _auth.signInWithCredential(credential);
       emit(LoginSuccess());
+    } on FirebaseAuthException catch (e) {
+      emit(LoginFailure('Error en autenticación con Google: ${e.message}'));
     } catch (e) {
-      emit(const LoginFailure("Error en autenticación con Google"));
+      emit(LoginFailure('Error desconocido: ${e.toString()}'));
     }
   }
 }

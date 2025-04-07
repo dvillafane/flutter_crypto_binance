@@ -51,6 +51,13 @@ class _RegisterViewState extends State<RegisterView> {
               context,
             ).showSnackBar(SnackBar(content: Text(state.error)));
           } else if (state is RegisterSuccess) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text(
+                  'Registro exitoso. Por favor verifica tu correo.',
+                ),
+              ),
+            );
             Navigator.pushAndRemoveUntil(
               context,
               MaterialPageRoute(builder: (_) => const LoginPage()),
@@ -77,7 +84,7 @@ class _RegisterViewState extends State<RegisterView> {
                   key: _formKey,
                   child: Column(
                     children: [
-                      _EmailInput(onSaved: (value) => _email = value!),
+                      _EmailInput(onSaved: (value) => _email = value!.trim()),
                       const SizedBox(height: 20),
                       _PasswordInput(onSaved: (value) => _password = value!),
                       const SizedBox(height: 20),
@@ -155,7 +162,13 @@ class _PasswordInput extends StatelessWidget {
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
       ),
       obscureText: true,
-      validator: (value) => value?.isEmpty ?? true ? 'Campo obligatorio' : null,
+      validator: (value) {
+        if (value?.isEmpty ?? true) return 'Campo obligatorio';
+        if (value!.length < 6) {
+          return 'La contraseña debe tener al menos 6 caracteres';
+        }
+        return null;
+      },
       onSaved: onSaved,
     );
   }

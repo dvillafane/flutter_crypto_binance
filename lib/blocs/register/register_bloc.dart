@@ -17,11 +17,19 @@ class RegisterBloc extends Bloc<RegisterEvent, RegisterState> {
     RegisterSubmitted event,
     Emitter<RegisterState> emit,
   ) async {
+    final email = event.email.trim();
+    final password = event.password;
+    if (password.length < 6) {
+      emit(
+        const RegisterFailure('La contraseña debe tener al menos 6 caracteres'),
+      );
+      return;
+    }
     emit(RegisterLoading());
     try {
       final userCredential = await _auth.createUserWithEmailAndPassword(
-        email: event.email,
-        password: event.password,
+        email: email,
+        password: password,
       );
       await userCredential.user!.sendEmailVerification();
       emit(RegisterSuccess());
