@@ -62,7 +62,7 @@ class _LoginViewState extends State<LoginView> {
                   key: _formKey,
                   child: Column(
                     children: [
-                      _EmailInput(onSaved: (value) => _email = value!),
+                      _EmailInput(onSaved: (value) => _email = value!.trim()),
                       const SizedBox(height: 20),
                       _PasswordInput(onSaved: (value) => _password = value!),
                       const SizedBox(height: 20),
@@ -125,7 +125,6 @@ class _LoginViewState extends State<LoginView> {
   }
 }
 
-// Estilos comunes
 const cardColor = Color(0xFF1E1E1E);
 const accentColor = Color.fromRGBO(66, 66, 66, 1);
 const textColor = Colors.white;
