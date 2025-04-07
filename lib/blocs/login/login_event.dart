@@ -14,4 +14,6 @@ class LoginSubmitted extends LoginEvent {
   List<Object> get props => [email, password];
 }
 
-class LoginGoogleSubmitted extends LoginEvent {}
+class LoginGoogleSubmitted extends LoginEvent {
+  const LoginGoogleSubmitted();
+}
