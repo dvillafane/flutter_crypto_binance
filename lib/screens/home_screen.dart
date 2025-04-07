@@ -2,7 +2,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart'; // Para manejar estados con BLoC
-import '../blocs/crypto_bloc.dart';
+import '../blocs/crypto/crypto_bloc.dart';
 import '../services/crypto_detail_service.dart';
 import '../services/websocket_prices_service.dart';
 import 'crypto_detail_list_screen.dart';

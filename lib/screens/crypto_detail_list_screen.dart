@@ -1,8 +1,10 @@
 // Importamos los paquetes necesarios
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_crypto_binance/blocs/crypto/crypto_event.dart';
+import 'package:flutter_crypto_binance/blocs/crypto/crypto_state.dart';
 import 'package:intl/intl.dart';
-import '../blocs/crypto_bloc.dart';
+import '../blocs/crypto/crypto_bloc.dart';
 import '../models/crypto_detail.dart';
 
 // Pantalla que muestra la lista de criptomonedas con sus detalles
