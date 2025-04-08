@@ -32,6 +32,8 @@ class CryptoLoaded extends CryptoState {
   /// Conjunto de símbolos marcados como favoritos por el usuario
   final bool showFavorites;
 
+  final String sortCriteria;
+
   /// Si es true, la UI mostrará solo las criptos favoritas
 
   /// Constructor que recibe todos los campos obligatorios.
@@ -42,6 +44,7 @@ class CryptoLoaded extends CryptoState {
     required this.isWebSocketConnected,
     this.favoriteSymbols = const {},
     this.showFavorites = false,
+    this.sortCriteria = 'priceUsd',
   });
 
   /// Método para crear una nueva instancia modificando solo los campos
@@ -52,6 +55,7 @@ class CryptoLoaded extends CryptoState {
     bool? isWebSocketConnected,
     Set<String>? favoriteSymbols,
     bool? showFavorites,
+    String? sortCriteria,
   }) {
     return CryptoLoaded(
       cryptos: cryptos ?? this.cryptos,
@@ -59,6 +63,7 @@ class CryptoLoaded extends CryptoState {
       isWebSocketConnected: isWebSocketConnected ?? this.isWebSocketConnected,
       favoriteSymbols: favoriteSymbols ?? this.favoriteSymbols,
       showFavorites: showFavorites ?? this.showFavorites,
+      sortCriteria: sortCriteria ?? this.sortCriteria,
     );
   }
 
@@ -71,6 +76,7 @@ class CryptoLoaded extends CryptoState {
     isWebSocketConnected,
     favoriteSymbols,
     showFavorites,
+    sortCriteria,
   ];
 }
 
