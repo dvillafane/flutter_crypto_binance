@@ -15,18 +15,17 @@ class CryptoDetailService {
   final String coinMarketCapBaseUrl = 'https://pro-api.coinmarketcap.com';
 
   // Clave API obtenida desde las variables de entorno
-  final String apiKey = dotenv.env['API_KEY'] ?? 'default_key'; // Fallback si no se encuentra
+  final String apiKey =
+      dotenv.env['API_KEY'] ?? 'default_key'; // Fallback si no se encuentra
 
   /// Método para obtener las 100 criptomonedas principales desde CoinMarketCap
   Future<List<CryptoDetail>> fetchTop100CryptoDetails() async {
     // Encabezado con la API key
     final headers = {'X-CMC_PRO_API_KEY': apiKey};
-
     // Construye la URL con parámetros para obtener el top 100
     final listingsUrl = Uri.parse(
       '$coinMarketCapBaseUrl/v1/cryptocurrency/listings/latest?start=1&limit=100&convert=USD',
     );
-
     // Solicitud GET a la API
     final response = await http.get(listingsUrl, headers: headers);
 
@@ -38,29 +37,47 @@ class CryptoDetailService {
 
       // Recorre cada criptomoneda recibida
       for (final coinData in listingsData) {
-        final symbol = coinData['symbol'].toString().toUpperCase(); // Ej. BTC
+        final symbol = coinData['symbol'].toString().toUpperCase();
+        final quote = coinData['quote']['USD'];
         final docRef = _firestore
             .collection('crypto_details')
             .doc(symbol); // Referencia al documento Firestore
 
         // Crea el objeto CryptoDetail con los datos obtenidos
         final cryptoDetail = CryptoDetail(
-          symbol: symbol,
+          id: coinData['id'].toString(),
           name: coinData['name'] ?? symbol,
-          priceUsd:
-              (coinData['quote']['USD']['price'] as num?)?.toDouble() ?? 0,
-          volumeUsd24Hr:
-              (coinData['quote']['USD']['volume_24h'] as num?)?.toDouble() ?? 0,
+          symbol: symbol,
+          cmcRank: coinData['cmc_rank'] ?? 0,
+          priceUsd: (quote['price'] as num?)?.toDouble() ?? 0,
+          volumeUsd24Hr: (quote['volume_24h'] as num?)?.toDouble() ?? 0,
+          percentChange24h:
+              (quote['percent_change_24h'] as num?)?.toDouble() ?? 0,
+          percentChange7d:
+              (quote['percent_change_7d'] as num?)?.toDouble() ?? 0,
+          marketCapUsd: (quote['market_cap'] as num?)?.toDouble() ?? 0,
+          circulatingSupply:
+              (coinData['circulating_supply'] as num?)?.toDouble() ?? 0,
+          totalSupply: (coinData['total_supply'] as num?)?.toDouble(),
+          maxSupply: (coinData['max_supply'] as num?)?.toDouble(),
           logoUrl:
               'https://s2.coinmarketcap.com/static/img/coins/64x64/${coinData["id"]}.png',
         );
 
         // Guarda o actualiza la info en Firestore con timestamp
         await docRef.set({
-          'symbol': cryptoDetail.symbol,
+          'id': cryptoDetail.id,
           'name': cryptoDetail.name,
+          'symbol': cryptoDetail.symbol,
+          'cmcRank': cryptoDetail.cmcRank,
           'priceUsd': cryptoDetail.priceUsd,
           'volumeUsd24Hr': cryptoDetail.volumeUsd24Hr,
+          'percentChange24h': cryptoDetail.percentChange24h,
+          'percentChange7d': cryptoDetail.percentChange7d,
+          'marketCapUsd': cryptoDetail.marketCapUsd,
+          'circulatingSupply': cryptoDetail.circulatingSupply,
+          'totalSupply': cryptoDetail.totalSupply,
+          'maxSupply': cryptoDetail.maxSupply,
           'logoUrl': cryptoDetail.logoUrl,
           'timestamp': FieldValue.serverTimestamp(),
         }, SetOptions(merge: true));
@@ -68,7 +85,6 @@ class CryptoDetailService {
         // Añade a la lista de resultados
         cryptoDetails.add(cryptoDetail);
       }
-
       // Devuelve la lista de objetos CryptoDetail
       return cryptoDetails;
     } else {
@@ -89,13 +105,12 @@ class CryptoDetailService {
       final data = doc.data();
       final timestamp = data['timestamp'] as Timestamp?;
 
-      // Filtra solo los datos con menos de 12 horas de antigüedad (720 minutos)
+      // Verifica si el timestamp es menor a 720 minutos (12 horas)
       if (timestamp != null &&
           DateTime.now().difference(timestamp.toDate()).inMinutes < 720) {
         cachedDetails.add(CryptoDetail.fromFirestore(data));
       }
     }
-
     // Retorna máximo 100 criptomonedas válidas en caché
     return cachedDetails.take(100).toList();
   }

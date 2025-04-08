@@ -37,6 +37,7 @@ class CryptoBloc extends Bloc<CryptoEvent, CryptoState> {
     on<DisconnectWebSocket>(_onDisconnectWebSocket);
     on<ToggleFavoriteSymbol>(_onToggleFavoriteSymbol);
     on<ToggleFavoritesView>(_onToggleFavoritesView);
+    on<ChangeSortCriteria>(_onChangeSortCriteria); // Nuevo handler
 
     // Iniciamos cargando criptomonedas
     add(LoadCryptos());
@@ -96,10 +97,8 @@ class CryptoBloc extends Bloc<CryptoEvent, CryptoState> {
       debugPrint('Conectando WebSocket...');
       _pricesService.connect();
       _pricesSubscription = _pricesService.pricesStream.listen(
-        (prices) =>
-            add(PricesUpdated(prices: prices)), // Evento que actualiza precios
-        onError:
-            (error) => add(DisconnectWebSocket()), // Desconectamos si hay error
+        (prices) => add(PricesUpdated(prices: prices)),
+        onError: (error) => add(DisconnectWebSocket()),
       );
 
       // Cargar las favoritas del usuario desde Firestore
@@ -129,41 +128,78 @@ class CryptoBloc extends Bloc<CryptoEvent, CryptoState> {
       // Recorremos las criptos y actualizamos los precios y colores
       final updatedCryptos =
           currentState.cryptos.map((crypto) {
-              final binanceSymbol = "${crypto.symbol}USDT".toLowerCase();
-              final oldPrice =
-                  _previousPrices[crypto.symbol] ?? crypto.priceUsd;
-              final newPrice = event.prices[binanceSymbol] ?? crypto.priceUsd;
+            final binanceSymbol = "${crypto.symbol}USDT".toLowerCase();
+            final oldPrice = _previousPrices[crypto.symbol] ?? crypto.priceUsd;
+            final newPrice = event.prices[binanceSymbol] ?? crypto.priceUsd;
 
-              // Determinamos el color en función del cambio de precio
-              Color color = Colors.white;
-              if (newPrice > oldPrice) {
-                color = Colors.green; // Subió
-              } else if (newPrice < oldPrice) {
-                color = Colors.red; // Bajó
-              }
+            // Determinar color según cambio de precio
+            Color color = Colors.white;
+            if (newPrice > oldPrice) {
+              color = Colors.green; // Subió
+            } else if (newPrice < oldPrice) {
+              color = Colors.red; // Bajó
+            }
 
-              // Guardamos el color actualizado y el nuevo precio
-              updatedColors[crypto.symbol] = color;
-              _previousPrices[crypto.symbol] = newPrice;
+            updatedColors[crypto.symbol] = color;
+            _previousPrices[crypto.symbol] = newPrice;
 
-              // Devolvemos una nueva instancia de la crypto con precio actualizado
-              return CryptoDetail(
-                symbol: crypto.symbol,
-                name: crypto.name,
-                priceUsd: newPrice,
-                volumeUsd24Hr: crypto.volumeUsd24Hr,
-                logoUrl: crypto.logoUrl,
-              );
-            }).toList()
-            ..sort(
-              (a, b) => b.priceUsd.compareTo(a.priceUsd),
-            ); // Reordenamos por precio
+            // Devolver cripto actualizada
+            return CryptoDetail(
+              id: crypto.id,
+              name: crypto.name,
+              symbol: crypto.symbol,
+              cmcRank: crypto.cmcRank,
+              priceUsd: newPrice,
+              volumeUsd24Hr: crypto.volumeUsd24Hr,
+              percentChange24h: crypto.percentChange24h,
+              percentChange7d: crypto.percentChange7d,
+              marketCapUsd: crypto.marketCapUsd,
+              circulatingSupply: crypto.circulatingSupply,
+              totalSupply: crypto.totalSupply,
+              maxSupply: crypto.maxSupply,
+              logoUrl: crypto.logoUrl,
+            );
+          }).toList();
 
-      // Emitimos el nuevo estado con los cambios
+      // Ordenar según el criterio actual
+      switch (currentState.sortCriteria) {
+        case 'priceUsd':
+          updatedCryptos.sort((a, b) => b.priceUsd.compareTo(a.priceUsd));
+          break;
+        case 'cmcRank':
+          updatedCryptos.sort((a, b) => a.cmcRank.compareTo(b.cmcRank));
+          break;
+      }
+
+      // Emitir nuevo estado
       emit(
         currentState.copyWith(
           cryptos: updatedCryptos,
           priceColors: updatedColors,
+        ),
+      );
+    }
+  }
+
+  void _onChangeSortCriteria(
+    ChangeSortCriteria event,
+    Emitter<CryptoState> emit,
+  ) {
+    final currentState = state;
+    if (currentState is CryptoLoaded) {
+      List<CryptoDetail> sortedCryptos = List.from(currentState.cryptos);
+      switch (event.criteria) {
+        case 'priceUsd':
+          sortedCryptos.sort((a, b) => b.priceUsd.compareTo(a.priceUsd));
+          break;
+        case 'cmcRank':
+          sortedCryptos.sort((a, b) => a.cmcRank.compareTo(b.cmcRank));
+          break;
+      }
+      emit(
+        currentState.copyWith(
+          cryptos: sortedCryptos,
+          sortCriteria: event.criteria,
         ),
       );
     }

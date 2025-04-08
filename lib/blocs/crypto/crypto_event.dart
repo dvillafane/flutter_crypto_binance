@@ -38,3 +38,10 @@ class ToggleFavoriteSymbol extends CryptoEvent {
 
 // Evento para alternar entre vista de todas y vista de favoritas
 class ToggleFavoritesView extends CryptoEvent {}
+
+class ChangeSortCriteria extends CryptoEvent {
+  final String criteria;
+  const ChangeSortCriteria(this.criteria);
+  @override
+  List<Object?> get props => [criteria];
+}
