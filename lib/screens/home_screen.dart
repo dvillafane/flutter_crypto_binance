@@ -1,110 +1,81 @@
 // Importaciones necesarias
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart'; // Para manejar estados con BLoC
+import 'package:flutter_bloc/flutter_bloc.dart';
 import '../blocs/crypto/crypto_bloc.dart';
 import '../services/crypto_detail_service.dart';
 import '../services/websocket_prices_service.dart';
 import 'crypto_detail_list_screen.dart';
-import 'auth_screen/login_screen.dart';
 import 'profile_screen.dart';
 
-/// Pantalla principal de la app
-class HomeScreen extends StatelessWidget {
+// Definición de la pantalla principal que contendrá la navegación inferior
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
+  // Creación del estado asociado a HomeScreen
+  @override
+  HomeScreenState createState() => HomeScreenState();
+}
+
+// Estado de la pantalla principal donde se gestiona la navegación y los widgets mostrados
+class HomeScreenState extends State<HomeScreen> {
+  int _selectedIndex =
+      0; // Índice de la pantalla actualmente seleccionada (0: Home, 1: Perfil)
+
+  // Lista de pantallas a mostrar basada en la opción seleccionada en la barra de navegación inferior
+  final List<Widget> _screens = [
+    // Se utiliza un BlocProvider para inyectar la lógica de negocio CryptoBloc en la pantalla de criptomonedas
+    BlocProvider(
+      create:
+          (context) => CryptoBloc(
+            userId:
+                FirebaseAuth
+                    .instance
+                    .currentUser!
+                    .uid, // Se utiliza el UID del usuario autenticado en Firebase
+            cryptoService:
+                CryptoDetailService(), // Servicio para obtener los detalles de criptomonedas
+            pricesService:
+                WebSocketPricesService(), // Servicio para recibir actualizaciones en tiempo real de precios por WebSocket
+          ),
+      child:
+          const CryptoDetailListScreen(), // Pantalla que muestra la lista de criptomonedas
+    ),
+    const ProfileScreen(), // Pantalla de perfil del usuario
+  ];
+
+  // Método para actualizar la pantalla seleccionada mediante la barra de navegación
+  void _onItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index; // Actualiza el índice al que fue tocado
+    });
+  }
+
+  // Construcción de la interfaz del widget
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // Estructura básica de la pantalla
-      appBar: AppBar(
-        backgroundColor: Colors.black, // Color de fondo negro para la AppBar
-        title: Image.asset(
-          'assets/icon/app_icon_removebg.png', // Logo de la aplicación en la AppBar
-          width: 40,
-          height: 40,
-          fit: BoxFit.contain, // Ajuste del logo para que no se deforme
-        ),
-        centerTitle: true, // Centra el logo en la AppBar
-      ),
-      drawer: Drawer(
-        // Menú lateral (Drawer)
-        child: Container(
-          color: Colors.grey[900], // Color de fondo oscuro para el menú
-          child: ListView(
-            padding:
-                EdgeInsets
-                    .zero, // Sin padding para que los elementos inicien desde arriba
-            children: <Widget>[
-              const DrawerHeader(
-                // Encabezado del menú lateral
-                decoration: BoxDecoration(
-                  color: Colors.black, // Fondo negro para el encabezado
-                ),
-                child: Text(
-                  'Menú',
-                  style: TextStyle(
-                    color: Colors.white, // Texto blanco
-                    fontSize: 24, // Tamaño del texto
-                  ),
-                ),
-              ),
-              ListTile(
-                // Opción para ver el perfil
-                leading: const Icon(
-                  Icons.person,
-                  color: Colors.white,
-                ), // Ícono de perfil
-                title: const Text(
-                  'Perfil',
-                  style: TextStyle(color: Colors.white), // Texto blanco
-                ),
-                onTap: () {
-                  Navigator.pop(context); // Cierra el Drawer
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const ProfileScreen(),
-                    ),
-                  ); // Navega a la pantalla de perfil
-                },
-              ),
-              ListTile(
-                // Opción para cerrar sesión
-                leading: const Icon(
-                  Icons.exit_to_app,
-                  color: Colors.white,
-                ), // Ícono de salir
-                title: const Text(
-                  'Cerrar sesión',
-                  style: TextStyle(color: Colors.white), // Texto blanco
-                ),
-                onTap: () {
-                  FirebaseAuth.instance.signOut(); // Cierra sesión con Firebase
-                  Navigator.pushAndRemoveUntil(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const LoginPage(),
-                    ), // Redirige a la pantalla de login
-                    (route) => false, // Elimina todas las rutas anteriores
-                  );
-                },
-              ),
-            ],
+      body:
+          _screens[_selectedIndex], // Muestra la pantalla correspondiente al índice seleccionado
+      // Barra de navegación inferior para cambiar entre pantallas
+      bottomNavigationBar: BottomNavigationBar(
+        backgroundColor:
+            Colors.black, // Color de fondo de la barra de navegación
+        selectedItemColor: Colors.white, // Color de los ítems seleccionados
+        unselectedItemColor: Colors.grey, // Color de los ítems no seleccionados
+        currentIndex: _selectedIndex, // Índice actualmente seleccionado
+        onTap:
+            _onItemTapped, // Método que se invoca al tocar un ítem en la barra
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home), // Ícono para la pantalla de inicio
+            label: 'Home', // Etiqueta del ítem
           ),
-        ),
-      ),
-      // Cuerpo de la pantalla envuelto en un BlocProvider
-      body: BlocProvider(
-        // Crea una instancia del CryptoBloc y lo provee a los widgets hijos
-        create:
-            (_) => CryptoBloc(
-              userId: FirebaseAuth.instance.currentUser!.uid,
-              cryptoService: CryptoDetailService(),
-              pricesService: WebSocketPricesService(),
-            ),
-        child:
-            const CryptoDetailListScreen(), // Widget hijo que consume el BLoC
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person), // Ícono para la pantalla de perfil
+            label: 'Perfil', // Etiqueta del ítem
+          ),
+        ],
       ),
     );
   }

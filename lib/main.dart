@@ -1,11 +1,10 @@
-// main.dart
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_crypto_binance/firebase_options.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'screens/auth_screen/login_screen.dart';
-import 'screens/home_screen.dart'; // Asegúrate de importar HomeScreen
+import 'screens/home_screen.dart';
 
 /// Punto de entrada principal de la aplicación Flutter
 void main() async {
@@ -63,7 +62,7 @@ class MyApp extends StatelessWidget {
         // Usa Material 3 (diseño más moderno)
         useMaterial3: true,
       ),
-      home: const AuthCheck(), // Cambia home a AuthCheck
+      home: const AuthCheck(),
     );
   }
 }
