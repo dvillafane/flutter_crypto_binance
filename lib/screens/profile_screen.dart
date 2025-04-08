@@ -24,24 +24,14 @@ class ProfileScreen extends StatelessWidget {
         appBar: AppBar(
           title: const Text('Perfil'),
           backgroundColor: Colors.black,
-          actions: [
-            IconButton(
-              icon: const Icon(Icons.edit),
-              onPressed: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Funcionalidad de edición en desarrollo')),
-                );
-              },
-            ),
-          ],
         ),
         backgroundColor: backgroundColor,
         body: BlocConsumer<ProfileBloc, ProfileState>(
           listener: (context, state) {
             if (state is ProfileError) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text(state.message)),
-              );
+              ScaffoldMessenger.of(
+                context,
+              ).showSnackBar(SnackBar(content: Text(state.message)));
             }
           },
           builder: (context, state) {
@@ -55,11 +45,19 @@ class ProfileScreen extends StatelessWidget {
                   children: [
                     CircleAvatar(
                       radius: 60,
-                      backgroundImage: state.photoUrl != null ? NetworkImage(state.photoUrl!) : null,
+                      backgroundImage:
+                          state.photoUrl != null
+                              ? NetworkImage(state.photoUrl!)
+                              : null,
                       backgroundColor: cardColor,
-                      child: state.photoUrl == null
-                          ? const Icon(Icons.person, size: 60, color: textColor)
-                          : null,
+                      child:
+                          state.photoUrl == null
+                              ? const Icon(
+                                Icons.person,
+                                size: 60,
+                                color: textColor,
+                              )
+                              : null,
                     ),
                     const SizedBox(height: 20),
                     Text(
@@ -75,38 +73,19 @@ class ProfileScreen extends StatelessWidget {
                       state.email,
                       style: const TextStyle(fontSize: 18, color: hintColor),
                     ),
-                    const SizedBox(height: 10),
-                    if (!state.isEmailVerified) ...[
-                      Text(
-                        'Email no verificado',
-                        style: TextStyle(color: Colors.redAccent.shade100, fontSize: 16),
-                      ),
-                      const SizedBox(height: 10),
-                    ],
-                    const SizedBox(height: 30),
-                    _buildActionButton(
-                      context: context,
-                      label: state.isEmailVerified ? 'Email verificado' : 'Verificar email',
-                      icon: Icons.email,
-                      onPressed: state.isEmailVerified
-                          ? null
-                          : () {
-                              context.read<ProfileBloc>().add(SendVerificationEmail());
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('Email de verificación enviado')),
-                              );
-                            },
-                      color: state.isEmailVerified ? hintColor : accentColor,
-                    ),
                     const SizedBox(height: 15),
                     _buildActionButton(
                       context: context,
                       label: 'Restablecer contraseña',
                       icon: Icons.lock,
                       onPressed: () {
-                        context.read<ProfileBloc>().add(SendPasswordResetEmail());
+                        context.read<ProfileBloc>().add(
+                          SendPasswordResetEmail(),
+                        );
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Email de recuperación enviado')),
+                          const SnackBar(
+                            content: Text('Email de recuperación enviado'),
+                          ),
                         );
                       },
                       color: accentColor,
@@ -120,7 +99,9 @@ class ProfileScreen extends StatelessWidget {
                         FirebaseAuth.instance.signOut();
                         Navigator.pushAndRemoveUntil(
                           context,
-                          MaterialPageRoute(builder: (context) => const LoginPage()),
+                          MaterialPageRoute(
+                            builder: (context) => const LoginPage(),
+                          ),
                           (route) => false,
                         );
                       },
@@ -134,31 +115,45 @@ class ProfileScreen extends StatelessWidget {
                       onPressed: () async {
                         final shouldDelete = await showDialog<bool>(
                           context: context,
-                          builder: (context) => AlertDialog(
-                            title: const Text('Eliminar cuenta', style: TextStyle(color: textColor)),
-                            content: const Text(
-                              '¿Estás seguro de que quieres eliminar tu cuenta? Esta acción no se puede deshacer.',
-                              style: TextStyle(color: textColor),
-                            ),
-                            backgroundColor: cardColor,
-                            actions: [
-                              TextButton(
-                                onPressed: () => Navigator.pop(context, false),
-                                child: const Text('Cancelar', style: TextStyle(color: accentColor)),
+                          builder:
+                              (context) => AlertDialog(
+                                title: const Text(
+                                  'Eliminar cuenta',
+                                  style: TextStyle(color: textColor),
+                                ),
+                                content: const Text(
+                                  '¿Estás seguro de que quieres eliminar tu cuenta? Esta acción no se puede deshacer.',
+                                  style: TextStyle(color: textColor),
+                                ),
+                                backgroundColor: cardColor,
+                                actions: [
+                                  TextButton(
+                                    onPressed:
+                                        () => Navigator.pop(context, false),
+                                    child: const Text(
+                                      'Cancelar',
+                                      style: TextStyle(color: accentColor),
+                                    ),
+                                  ),
+                                  TextButton(
+                                    onPressed:
+                                        () => Navigator.pop(context, true),
+                                    child: const Text(
+                                      'Eliminar',
+                                      style: TextStyle(color: Colors.redAccent),
+                                    ),
+                                  ),
+                                ],
                               ),
-                              TextButton(
-                                onPressed: () => Navigator.pop(context, true),
-                                child: const Text('Eliminar', style: TextStyle(color: Colors.redAccent)),
-                              ),
-                            ],
-                          ),
                         );
 
-                        if (shouldDelete == true) {
+                        if (shouldDelete == true && context.mounted) {
                           context.read<ProfileBloc>().add(DeleteAccount());
                           Navigator.pushAndRemoveUntil(
                             context,
-                            MaterialPageRoute(builder: (context) => const LoginPage()),
+                            MaterialPageRoute(
+                              builder: (context) => const LoginPage(),
+                            ),
                             (route) => false,
                           );
                         }
@@ -207,7 +202,9 @@ class ProfileScreen extends StatelessWidget {
         style: ElevatedButton.styleFrom(
           backgroundColor: color,
           padding: const EdgeInsets.symmetric(vertical: 15),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
         ),
       ),
     );

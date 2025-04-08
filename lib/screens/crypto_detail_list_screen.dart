@@ -237,23 +237,65 @@ class CryptoDetailListScreenState extends State<CryptoDetailListScreen> {
                 Text(detail.name, style: const TextStyle(color: Colors.white)),
               ],
             ),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Símbolo: ${detail.symbol}',
-                  style: const TextStyle(color: Colors.white70),
-                ),
-                Text(
-                  'Precio: \$${numberFormat.format(detail.priceUsd)} USD',
-                  style: const TextStyle(color: Colors.white70),
-                ),
-                Text(
-                  'Volumen 24h: \$${numberFormat.format(detail.volumeUsd24Hr)} USD',
-                  style: const TextStyle(color: Colors.white70),
-                ),
-              ],
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Símbolo: ${detail.symbol}',
+                    style: const TextStyle(color: Colors.white70),
+                  ),
+                  Text(
+                    'Ranking: #${detail.cmcRank}',
+                    style: const TextStyle(color: Colors.white70),
+                  ),
+                  Text(
+                    'Precio: \$${numberFormat.format(detail.priceUsd)} USD',
+                    style: const TextStyle(color: Colors.white70),
+                  ),
+                  Text(
+                    'Volumen 24h: \$${numberFormat.format(detail.volumeUsd24Hr)} USD',
+                    style: const TextStyle(color: Colors.white70),
+                  ),
+                  Text(
+                    'Cambio 24h: ${detail.percentChange24h.toStringAsFixed(2)}%',
+                    style: TextStyle(
+                      color:
+                          detail.percentChange24h >= 0
+                              ? Colors.green
+                              : Colors.red,
+                    ),
+                  ),
+                  Text(
+                    'Cambio 7d: ${detail.percentChange7d.toStringAsFixed(2)}%',
+                    style: TextStyle(
+                      color:
+                          detail.percentChange7d >= 0
+                              ? Colors.green
+                              : Colors.red,
+                    ),
+                  ),
+                  Text(
+                    'Capitalización de mercado: \$${numberFormat.format(detail.marketCapUsd)} USD',
+                    style: const TextStyle(color: Colors.white70),
+                  ),
+                  Text(
+                    'Suministro circulante: ${numberFormat.format(detail.circulatingSupply)} ${detail.symbol}',
+                    style: const TextStyle(color: Colors.white70),
+                  ),
+                  if (detail.totalSupply != null)
+                    Text(
+                      'Suministro total: ${numberFormat.format(detail.totalSupply!)} ${detail.symbol}',
+                      style: const TextStyle(color: Colors.white70),
+                    ),
+                  if (detail.maxSupply != null)
+                    Text(
+                      'Suministro máximo: ${numberFormat.format(detail.maxSupply!)} ${detail.symbol}',
+                      style: const TextStyle(color: Colors.white70),
+                    ),
+                ],
+              ),
             ),
             actions: [
               TextButton(

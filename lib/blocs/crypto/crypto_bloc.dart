@@ -96,10 +96,8 @@ class CryptoBloc extends Bloc<CryptoEvent, CryptoState> {
       debugPrint('Conectando WebSocket...');
       _pricesService.connect();
       _pricesSubscription = _pricesService.pricesStream.listen(
-        (prices) =>
-            add(PricesUpdated(prices: prices)), // Evento que actualiza precios
-        onError:
-            (error) => add(DisconnectWebSocket()), // Desconectamos si hay error
+        (prices) => add(PricesUpdated(prices: prices)),
+        onError: (error) => add(DisconnectWebSocket()),
       );
 
       // Cargar las favoritas del usuario desde Firestore
@@ -147,11 +145,20 @@ class CryptoBloc extends Bloc<CryptoEvent, CryptoState> {
               _previousPrices[crypto.symbol] = newPrice;
 
               // Devolvemos una nueva instancia de la crypto con precio actualizado
+              // y mantenemos todos los demás campos originales
               return CryptoDetail(
-                symbol: crypto.symbol,
+                id: crypto.id,
                 name: crypto.name,
+                symbol: crypto.symbol,
+                cmcRank: crypto.cmcRank,
                 priceUsd: newPrice,
                 volumeUsd24Hr: crypto.volumeUsd24Hr,
+                percentChange24h: crypto.percentChange24h,
+                percentChange7d: crypto.percentChange7d,
+                marketCapUsd: crypto.marketCapUsd,
+                circulatingSupply: crypto.circulatingSupply,
+                totalSupply: crypto.totalSupply,
+                maxSupply: crypto.maxSupply,
                 logoUrl: crypto.logoUrl,
               );
             }).toList()
