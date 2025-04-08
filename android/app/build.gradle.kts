@@ -12,11 +12,17 @@ dependencies {
   // Import the Firebase BoM
   implementation(platform("com.google.firebase:firebase-bom:33.12.0"))
 
+  // Dependencia para mostrar mensajes dentro de la aplicación (In-App Messaging) con Firebase
+  implementation("com.google.firebase:firebase-inappmessaging-display")
 
-  // TODO: Add the dependencies for Firebase products you want to use
   // When using the BoM, don't specify versions in Firebase dependencies
   implementation("com.google.firebase:firebase-analytics")
 
+  // Agrega la dependencia para Firebase Cloud Messaging (no es necesario especificar versión por el BoM)
+  implementation("com.google.firebase:firebase-messaging")
+
+  // Añade la biblioteca de desugarización
+  coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
 
   // Add the dependencies for any other desired Firebase products
   // https://firebase.google.com/docs/android/setup#available-libraries
@@ -30,6 +36,7 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
+        isCoreLibraryDesugaringEnabled = true
     }
 
     kotlinOptions {

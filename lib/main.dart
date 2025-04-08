@@ -3,12 +3,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_crypto_binance/firebase_options.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'services/noti_service.dart'; // Aquí se encuentra tu configuración del background handler, etc.
+import 'services/token_service.dart';
 import 'screens/auth_screen/login_screen.dart';
 import 'screens/home_screen.dart';
 
-/// Punto de entrada principal de la aplicación Flutter
-void main() async {
-  // Asegura que Flutter esté completamente inicializado antes de ejecutar código asíncrono
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // Carga el archivo .env con las variables de entorno
@@ -17,14 +18,31 @@ void main() async {
   } catch (e) {
     debugPrint("Error al cargar el archivo .env: $e");
   }
-  // Inicializa Firebase con la configuración específica del dispositivo (web, Android, iOS)
+
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  await initializeNotifications();
+
+  // Registra correctamente el handler de mensajes en segundo plano.
+  FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
+
   runApp(const MyApp());
 }
 
-/// Widget principal de la aplicación, sin estado (StatelessWidget)
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  @override
+  void initState() {
+    super.initState();
+    obtenerYEnviarTokenFCM();
+    obtenerYEnviarFID();
+    listenTokenRefresh();
+    setupNotificationListeners();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -43,8 +61,6 @@ class MyApp extends StatelessWidget {
           backgroundColor: Colors.black,
           titleTextStyle: TextStyle(color: Colors.white, fontSize: 20),
         ),
-
-        // Estilo de texto para el cuerpo
         textTheme: const TextTheme(
           bodyMedium: TextStyle(color: Colors.white),
           bodySmall: TextStyle(color: Colors.white70),
@@ -67,10 +83,8 @@ class MyApp extends StatelessWidget {
   }
 }
 
-// Nuevo widget para verificar el estado de autenticación
 class AuthCheck extends StatelessWidget {
   const AuthCheck({super.key});
-
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<User?>(
@@ -82,12 +96,7 @@ class AuthCheck extends StatelessWidget {
             body: Center(child: CircularProgressIndicator()),
           );
         }
-        // Si hay un usuario autenticado, redirige a HomeScreen
-        if (snapshot.hasData) {
-          return const HomeScreen();
-        }
-        // Si no hay usuario, muestra LoginPage
-        return const LoginPage();
+        return snapshot.hasData ? const HomeScreen() : const LoginPage();
       },
     );
   }
