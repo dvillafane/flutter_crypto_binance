@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_crypto_binance/screens/home_screen.dart';
 import 'package:flutter_crypto_binance/screens/auth_screen/register_screen.dart';
 import 'package:sign_button/sign_button.dart';
 import 'forgot_password_screen.dart';
@@ -34,15 +33,15 @@ class _LoginViewState extends State<LoginView> {
       body: BlocListener<LoginBloc, LoginState>(
         listener: (context, state) {
           if (state is LoginFailure) {
-            ScaffoldMessenger.of(
-              context,
-            ).showSnackBar(SnackBar(content: Text(state.error)));
-          } else if (state is LoginSuccess) {
-            Navigator.pushAndRemoveUntil(
-              context,
-              MaterialPageRoute(builder: (_) => HomeScreen()),
-              (route) => false,
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(state.error)),
             );
+          } else if (state is LoginSuccess) {
+            // Opcional: Muestra un mensaje de éxito
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Inicio de sesión exitoso')),
+            );
+            // La redirección la manejará el StreamBuilder en main.dart
           }
         },
         child: Center(

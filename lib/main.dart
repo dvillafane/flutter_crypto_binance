@@ -1,13 +1,11 @@
-// Importa Firebase Core para inicializar Firebase en la app
+// main.dart
 import 'package:firebase_core/firebase_core.dart';
-// Importa Flutter y su framework de diseño de UI
 import 'package:flutter/material.dart';
-// Importa las opciones de configuración de Firebase generadas automáticamente
 import 'package:flutter_crypto_binance/firebase_options.dart';
-// Importa flutter_dotenv para manejar variables de entorno
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-// Importa la pantalla principal de la aplicación
+import 'package:firebase_auth/firebase_auth.dart';
 import 'screens/auth_screen/login_screen.dart';
+import 'screens/home_screen.dart'; // Asegúrate de importar HomeScreen
 
 /// Punto de entrada principal de la aplicación Flutter
 void main() async {
@@ -22,9 +20,7 @@ void main() async {
   }
   // Inicializa Firebase con la configuración específica del dispositivo (web, Android, iOS)
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-
-  // Inicia la aplicación llamando a MyApp (el widget principal)
-  runApp(MyApp());
+  runApp(const MyApp());
 }
 
 /// Widget principal de la aplicación, sin estado (StatelessWidget)
@@ -35,13 +31,12 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       // Título de la app (se usa en algunos dispositivos al cambiar entre apps)
-      title: 'CoinCap API 2.0 Demo',
+      title: 'Cyptos 2.0 Demo',
 
       // Define el tema visual general de la app
       theme: ThemeData(
-        brightness: Brightness.dark, // Activa modo oscuro
-        primaryColor: Colors.black, // Color principal: negro
-        // Fondo negro para toda la app (pantallas Scaffold)
+        brightness: Brightness.dark,
+        primaryColor: Colors.black,
         scaffoldBackgroundColor: Colors.black,
 
         // Tema para la AppBar (barra superior)
@@ -57,10 +52,7 @@ class MyApp extends StatelessWidget {
         ),
 
         // Tema visual para las tarjetas (Cards)
-        cardTheme: CardTheme(
-          color: Colors.grey[900], // Fondo oscuro para tarjetas
-          elevation: 4, // Elevación para sombra
-        ),
+        cardTheme: CardTheme(color: Colors.grey[900], elevation: 4),
 
         // Tema visual para diálogos (AlertDialog, etc.)
         dialogTheme: const DialogTheme(
@@ -71,9 +63,33 @@ class MyApp extends StatelessWidget {
         // Usa Material 3 (diseño más moderno)
         useMaterial3: true,
       ),
+      home: const AuthCheck(), // Cambia home a AuthCheck
+    );
+  }
+}
 
-      // Pantalla inicial que se muestra al arrancar la app
-      home: LoginPage(),
+// Nuevo widget para verificar el estado de autenticación
+class AuthCheck extends StatelessWidget {
+  const AuthCheck({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<User?>(
+      stream: FirebaseAuth.instance.authStateChanges(),
+      builder: (context, snapshot) {
+        // Mientras se verifica el estado, muestra un indicador de carga
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
+        // Si hay un usuario autenticado, redirige a HomeScreen
+        if (snapshot.hasData) {
+          return const HomeScreen();
+        }
+        // Si no hay usuario, muestra LoginPage
+        return const LoginPage();
+      },
     );
   }
 }
