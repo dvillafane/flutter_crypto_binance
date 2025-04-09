@@ -31,7 +31,7 @@ class CryptoLoaded extends CryptoState {
 
   /// Conjunto de símbolos marcados como favoritos por el usuario
   final bool showFavorites;
-
+  
   final String sortCriteria;
 
   /// Si es true, la UI mostrará solo las criptos favoritas
@@ -71,16 +71,43 @@ class CryptoLoaded extends CryptoState {
   /// dos instancias de CryptoLoaded y determinar si son iguales.
   @override
   List<Object?> get props => [
-    cryptos,
-    priceColors,
-    isWebSocketConnected,
-    favoriteSymbols,
-    showFavorites,
-    sortCriteria,
-  ];
+        cryptos,
+        priceColors,
+        isWebSocketConnected,
+        favoriteSymbols,
+        showFavorites,
+        sortCriteria,
+      ];
 }
 
-// Estado de error
+class CryptoUpdating extends CryptoState {
+  final List<CryptoDetail> previousCryptos;
+  final Map<String, Color> priceColors;
+  final bool isWebSocketConnected;
+  final Set<String> favoriteSymbols;
+  final bool showFavorites;
+  final String sortCriteria;
+
+  const CryptoUpdating({
+    required this.previousCryptos,
+    required this.priceColors,
+    required this.isWebSocketConnected,
+    required this.favoriteSymbols,
+    required this.showFavorites,
+    required this.sortCriteria,
+  });
+
+  @override
+  List<Object?> get props => [
+        previousCryptos,
+        priceColors,
+        isWebSocketConnected,
+        favoriteSymbols,
+        showFavorites,
+        sortCriteria,
+      ];
+}
+
 class CryptoError extends CryptoState {
   final String message;
   const CryptoError({required this.message});
