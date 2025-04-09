@@ -17,7 +17,6 @@ class CryptoBloc extends Bloc<CryptoEvent, CryptoState> {
   final WebSocketPricesService _pricesService;
   final String userId;
 
-  // Para almacenar precios anteriores y comparar si subieron o bajaron
   final Map<String, double> _previousPrices = {};
 
   // Suscripción al stream del WebSocket
@@ -43,16 +42,51 @@ class CryptoBloc extends Bloc<CryptoEvent, CryptoState> {
     on<ChangeSortCriteria>(_onChangeSortCriteria);
     on<AutoUpdateCryptos>(_onAutoUpdateCryptos);
 
-    // Iniciamos cargando criptomonedas
     add(LoadCryptos());
+    _setupAutoUpdateTimer(); // Configuramos el temporizador basado en Firestore
+  }
 
-    // Configuramos el temporizador para actualizar automáticamente cada 5 minutos
-    _updateTimer = Timer.periodic(const Duration(minutes: 60), (timer) {
-      add(AutoUpdateCryptos()); // Disparamos el evento en lugar de llamar directamente al método
+  // Nueva función para configurar el temporizador basado en el timestamp de Firestore
+  Future<void> _setupAutoUpdateTimer() async {
+    const updateInterval = Duration(minutes: 360); // Intervalo de actualización
+
+    // Obtener el timestamp de la última actualización desde Firestore
+    final docRef = FirebaseFirestore.instance.collection('crypto_updates').doc('last_update');
+    final doc = await docRef.get();
+    Timestamp? lastUpdateTimestamp;
+
+    if (doc.exists) {
+      lastUpdateTimestamp = doc.data()?['timestamp'] as Timestamp?;
+    }
+
+    Duration timeToNextUpdate;
+    if (lastUpdateTimestamp != null) {
+      final lastUpdate = lastUpdateTimestamp.toDate();
+      final timeSinceLastUpdate = DateTime.now().difference(lastUpdate);
+      timeToNextUpdate = updateInterval - timeSinceLastUpdate;
+
+      // Si ya pasó el intervalo, actualizamos inmediatamente y reiniciamos
+      if (timeToNextUpdate.isNegative) {
+        add(AutoUpdateCryptos());
+        timeToNextUpdate = updateInterval;
+      }
+    } else {
+      // Si no hay registro previo, actualizamos ahora y usamos el intervalo completo
+      add(AutoUpdateCryptos());
+      timeToNextUpdate = updateInterval;
+    }
+
+    // Configuramos el temporizador con el tiempo calculado
+    _updateTimer = Timer.periodic(updateInterval, (timer) {
+      add(AutoUpdateCryptos());
+    });
+
+    // Ejecutamos la primera actualización con el tiempo restante
+    Timer(timeToNextUpdate, () {
+      add(AutoUpdateCryptos());
     });
   }
 
-  // Función para cargar las favoritas desde Firestore
   Future<Set<String>> _loadFavoriteSymbols(String userId) async {
     final doc = await FirebaseFirestore.instance.collection('users').doc(userId).get();
     if (doc.exists) {
@@ -257,6 +291,12 @@ class CryptoBloc extends Bloc<CryptoEvent, CryptoState> {
           _previousPrices[crypto.symbol] = crypto.priceUsd;
         }
         debugPrint('Emitting nuevos datos actualizados');
+        
+        // Actualizamos el timestamp en Firestore
+        await FirebaseFirestore.instance.collection('crypto_updates').doc('last_update').set({
+          'timestamp': FieldValue.serverTimestamp(),
+        });
+
         emit(currentState.copyWith(
           cryptos: newCryptos,
           priceColors: {for (var e in newCryptos) e.symbol: Colors.white},
