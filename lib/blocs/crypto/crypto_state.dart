@@ -13,7 +13,6 @@ abstract class CryptoState extends Equatable {
   List<Object?> get props => [];
 }
 
-// Estado mientras se cargan las criptomonedas
 class CryptoLoading extends CryptoState {}
 
 // Estado cuando las criptomonedas han sido cargadas correctamente
@@ -31,10 +30,8 @@ class CryptoLoaded extends CryptoState {
 
   /// Conjunto de símbolos marcados como favoritos por el usuario
   final bool showFavorites;
-  
   final String sortCriteria;
-
-  /// Si es true, la UI mostrará solo las criptos favoritas
+  final bool isUpdating; // Nueva propiedad para indicar actualización en curso
 
   /// Constructor que recibe todos los campos obligatorios.
   /// favoriteSymbols y showFavorites tienen valores por defecto.
@@ -45,6 +42,7 @@ class CryptoLoaded extends CryptoState {
     this.favoriteSymbols = const {},
     this.showFavorites = false,
     this.sortCriteria = 'priceUsd',
+    this.isUpdating = false, // Por defecto, no está actualizando
   });
 
   /// Método para crear una nueva instancia modificando solo los campos
@@ -56,6 +54,7 @@ class CryptoLoaded extends CryptoState {
     Set<String>? favoriteSymbols,
     bool? showFavorites,
     String? sortCriteria,
+    bool? isUpdating,
   }) {
     return CryptoLoaded(
       cryptos: cryptos ?? this.cryptos,
@@ -64,6 +63,7 @@ class CryptoLoaded extends CryptoState {
       favoriteSymbols: favoriteSymbols ?? this.favoriteSymbols,
       showFavorites: showFavorites ?? this.showFavorites,
       sortCriteria: sortCriteria ?? this.sortCriteria,
+      isUpdating: isUpdating ?? this.isUpdating,
     );
   }
 
@@ -77,34 +77,7 @@ class CryptoLoaded extends CryptoState {
         favoriteSymbols,
         showFavorites,
         sortCriteria,
-      ];
-}
-
-class CryptoUpdating extends CryptoState {
-  final List<CryptoDetail> previousCryptos;
-  final Map<String, Color> priceColors;
-  final bool isWebSocketConnected;
-  final Set<String> favoriteSymbols;
-  final bool showFavorites;
-  final String sortCriteria;
-
-  const CryptoUpdating({
-    required this.previousCryptos,
-    required this.priceColors,
-    required this.isWebSocketConnected,
-    required this.favoriteSymbols,
-    required this.showFavorites,
-    required this.sortCriteria,
-  });
-
-  @override
-  List<Object?> get props => [
-        previousCryptos,
-        priceColors,
-        isWebSocketConnected,
-        favoriteSymbols,
-        showFavorites,
-        sortCriteria,
+        isUpdating,
       ];
 }
 

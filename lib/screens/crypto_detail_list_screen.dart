@@ -141,17 +141,15 @@ class CryptoDetailListScreenState extends State<CryptoDetailListScreen> {
         builder: (context, state) {
           if (state is CryptoLoading) {
             return const Center(child: CircularProgressIndicator());
-          } else if (state is CryptoUpdating) {
+          } else if (state is CryptoLoaded) {
             return Column(
               children: [
-                const LinearProgressIndicator(),
+                if (state.isUpdating) const LinearProgressIndicator(), // Mostrar solo si está actualizando
                 Expanded(
-                  child: _buildCryptoList(state.previousCryptos, state),
+                  child: _buildCryptoList(state.cryptos, state),
                 ),
               ],
             );
-          } else if (state is CryptoLoaded) {
-            return _buildCryptoList(state.cryptos, state);
           } else if (state is CryptoError) {
             return Center(
               child: Text(
@@ -166,33 +164,20 @@ class CryptoDetailListScreenState extends State<CryptoDetailListScreen> {
     );
   }
 
-  Widget _buildCryptoList(List<CryptoDetail> cryptos, CryptoState state) {
+  Widget _buildCryptoList(List<CryptoDetail> cryptos, CryptoLoaded state) {
     var iterable = cryptos.where(
       (c) => c.name.toLowerCase().contains(searchQuery.toLowerCase()),
     );
-    late Set<String> favoriteSymbols;
-    late bool showFavorites;
 
-    if (state is CryptoLoaded) {
-      favoriteSymbols = state.favoriteSymbols;
-      showFavorites = state.showFavorites;
-    } else if (state is CryptoUpdating) {
-      favoriteSymbols = state.favoriteSymbols;
-      showFavorites = state.showFavorites;
-    } else {
-      favoriteSymbols = const {};
-      showFavorites = false;
-    }
-
-    if (showFavorites) {
-      iterable = iterable.where((c) => favoriteSymbols.contains(c.symbol));
+    if (state.showFavorites) {
+      iterable = iterable.where((c) => state.favoriteSymbols.contains(c.symbol));
     }
 
     final filtered = iterable.toList();
     if (filtered.isEmpty) {
       return Center(
         child: Text(
-          showFavorites ? 'No tienes favoritas aún' : 'No se encontró ninguna',
+          state.showFavorites ? 'No tienes favoritas aún' : 'No se encontró ninguna',
           style: const TextStyle(color: Colors.white70),
         ),
       );
@@ -202,7 +187,7 @@ class CryptoDetailListScreenState extends State<CryptoDetailListScreen> {
       itemCount: filtered.length,
       itemBuilder: (context, i) {
         final detail = filtered[i];
-        final isFav = favoriteSymbols.contains(detail.symbol);
+        final isFav = state.favoriteSymbols.contains(detail.symbol);
         return Card(
           color: Colors.grey[900],
           child: ListTile(
@@ -219,11 +204,7 @@ class CryptoDetailListScreenState extends State<CryptoDetailListScreen> {
             subtitle: AnimatedDefaultTextStyle(
               duration: const Duration(milliseconds: 350),
               style: TextStyle(
-                color: state is CryptoLoaded
-                    ? state.priceColors[detail.symbol] ?? Colors.white70
-                    : state is CryptoUpdating
-                        ? state.priceColors[detail.symbol] ?? Colors.white70
-                        : Colors.white70,
+                color: state.priceColors[detail.symbol] ?? Colors.white70,
               ),
               child: Text('\$${numberFormat.format(detail.priceUsd)} USD'),
             ),

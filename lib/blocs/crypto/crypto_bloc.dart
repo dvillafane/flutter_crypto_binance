@@ -41,7 +41,7 @@ class CryptoBloc extends Bloc<CryptoEvent, CryptoState> {
     on<ToggleFavoriteSymbol>(_onToggleFavoriteSymbol);
     on<ToggleFavoritesView>(_onToggleFavoritesView);
     on<ChangeSortCriteria>(_onChangeSortCriteria);
-    on<AutoUpdateCryptos>(_onAutoUpdateCryptos); // Nuevo handler para actualización automática
+    on<AutoUpdateCryptos>(_onAutoUpdateCryptos);
 
     // Iniciamos cargando criptomonedas
     add(LoadCryptos());
@@ -237,20 +237,13 @@ class CryptoBloc extends Bloc<CryptoEvent, CryptoState> {
   Future<void> _onAutoUpdateCryptos(AutoUpdateCryptos event, Emitter<CryptoState> emit) async {
     final currentState = state;
     if (currentState is CryptoLoaded) {
-      // Emitimos el estado CryptoUpdating con los datos actuales
-      emit(CryptoUpdating(
-        previousCryptos: currentState.cryptos,
-        priceColors: currentState.priceColors,
-        isWebSocketConnected: currentState.isWebSocketConnected,
-        favoriteSymbols: currentState.favoriteSymbols,
-        showFavorites: currentState.showFavorites,
-        sortCriteria: currentState.sortCriteria,
-      ));
+      // Indicamos que la actualización está en curso
+      emit(currentState.copyWith(isUpdating: true));
 
       try {
-        // Obtenemos los nuevos datos desde la API
+        debugPrint('Llamando a la API para nuevos datos...');
         final newCryptos = await _cryptoService.fetchTop100CryptoDetails();
-        // Ordenamos según el criterio actual
+        debugPrint('Datos recibidos, ordenando...');
         switch (currentState.sortCriteria) {
           case 'priceUsd':
             newCryptos.sort((a, b) => b.priceUsd.compareTo(a.priceUsd));
@@ -263,19 +256,15 @@ class CryptoBloc extends Bloc<CryptoEvent, CryptoState> {
         for (var crypto in newCryptos) {
           _previousPrices[crypto.symbol] = crypto.priceUsd;
         }
-        // Emitimos el nuevo estado CryptoLoaded con los datos actualizados
-        emit(CryptoLoaded(
+        debugPrint('Emitting nuevos datos actualizados');
+        emit(currentState.copyWith(
           cryptos: newCryptos,
           priceColors: {for (var e in newCryptos) e.symbol: Colors.white},
-          isWebSocketConnected: currentState.isWebSocketConnected,
-          favoriteSymbols: currentState.favoriteSymbols,
-          showFavorites: currentState.showFavorites,
-          sortCriteria: currentState.sortCriteria,
+          isUpdating: false, // La actualización ha terminado
         ));
       } catch (e) {
-        // Si hay error, volvemos al estado anterior
-        emit(currentState);
         debugPrint('Error al actualizar criptomonedas: $e');
+        emit(currentState.copyWith(isUpdating: false)); // Volvemos al estado normal en caso de error
       }
     }
   }
