@@ -45,3 +45,4 @@ class ChangeSortCriteria extends CryptoEvent {
   @override
   List<Object?> get props => [criteria];
 }
+class AutoUpdateCryptos extends CryptoEvent {} // Nuevo evento para actualización automática
