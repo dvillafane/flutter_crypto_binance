@@ -29,7 +29,7 @@ class _RegisterViewState extends State<RegisterView> {
   // Variables para almacenar los datos ingresados
   String _email = '';
   String _password = '';
-  String _name = ''; // Nuevo campo para el nombre
+  String _name = '';
 
   // Colores y estilos para la interfaz
   static const backgroundColor = Color(0xFF121212);
@@ -39,6 +39,9 @@ class _RegisterViewState extends State<RegisterView> {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final maxContentWidth = screenWidth > 600 ? 400.0 : screenWidth * 0.9;
+
     return Scaffold(
       backgroundColor: backgroundColor, // Fondo oscuro
       appBar: AppBar(
@@ -46,7 +49,10 @@ class _RegisterViewState extends State<RegisterView> {
         elevation: 0,
         // Botón para regresar a la pantalla anterior
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: textColor),
+          icon: const Icon(
+            Icons.arrow_back,
+            color: _RegisterViewState.textColor,
+          ),
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -55,14 +61,16 @@ class _RegisterViewState extends State<RegisterView> {
         listener: (context, state) {
           if (state is RegisterFailure) {
             // Muestra un mensaje en caso de error en el registro
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(state.error)),
-            );
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(SnackBar(content: Text(state.error)));
           } else if (state is RegisterSuccess) {
             // Muestra un mensaje de éxito y redirige a la pantalla de login
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
-                content: Text('Registro exitoso. Por favor verifica tu correo.'),
+                content: Text(
+                  'Registro exitoso. Por favor verifica tu correo.',
+                ),
               ),
             );
             Navigator.pushAndRemoveUntil(
@@ -72,62 +80,91 @@ class _RegisterViewState extends State<RegisterView> {
             );
           }
         },
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 40),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Título de la pantalla
-                const Text(
-                  'Crea una cuenta nueva',
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: textColor,
-                  ),
-                ),
-                const SizedBox(height: 30),
-                // Formulario de registro
-                Form(
-                  key: _formKey,
-                  child: Column(
-                    children: [
-                      // Campo para el nombre
-                      _NameInput(onSaved: (value) => _name = value!.trim()),
-                      const SizedBox(height: 20),
-                      // Campo para el correo electrónico
-                      _EmailInput(onSaved: (value) => _email = value!.trim()),
-                      const SizedBox(height: 20),
-                      // Campo para la contraseña
-                      _PasswordInput(onSaved: (value) => _password = value!),
-                      const SizedBox(height: 20),
-                      // Botón de registro con indicador de carga
-                      BlocBuilder<RegisterBloc, RegisterState>(
-                        builder: (context, state) {
-                          return _RegisterButton(
-                            isLoading: state is RegisterLoading,
-                            onPressed: () {
-                              // Valida el formulario y guarda los datos
-                              if (_formKey.currentState!.validate()) {
-                                _formKey.currentState!.save();
-                                // Envia el evento de registro con los datos
-                                context.read<RegisterBloc>().add(
-                                  RegisterSubmitted(
-                                    email: _email,
-                                    password: _password,
-                                    name: _name, // Se envía también el nombre
-                                  ),
-                                );
-                              }
-                            },
-                          );
-                        },
+        child: SafeArea(
+          child: Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(maxWidth: maxContentWidth),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    const SizedBox(height: 20),
+                    const Text(
+                      'Crea tu cuenta',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                        color: _RegisterViewState.textColor,
                       ),
-                    ],
-                  ),
+                    ),
+                    const SizedBox(height: 10),
+                    const Text(
+                      'Regístrate para comenzar',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(fontSize: 16, color: Colors.grey),
+                    ),
+                    const SizedBox(height: 30),
+                    Card(
+                      color: cardColor,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(15),
+                      ),
+                      elevation: 4,
+                      child: Padding(
+                        padding: const EdgeInsets.all(20),
+                        child: Form(
+                          key: _formKey,
+                          child: Column(
+                            children: [
+                              _NameInput(
+                                onSaved: (value) => _name = value!.trim(),
+                              ),
+                              const SizedBox(height: 20),
+                              _EmailInput(
+                                onSaved: (value) => _email = value!.trim(),
+                              ),
+                              const SizedBox(height: 20),
+                              _PasswordInput(
+                                onSaved: (value) => _password = value!,
+                              ),
+                              const SizedBox(height: 30),
+                              BlocBuilder<RegisterBloc, RegisterState>(
+                                builder: (context, state) {
+                                  return _RegisterButton(
+                                    isLoading: state is RegisterLoading,
+                                    onPressed: () {
+                                      if (_formKey.currentState!.validate()) {
+                                        _formKey.currentState!.save();
+                                        context.read<RegisterBloc>().add(
+                                          RegisterSubmitted(
+                                            email: _email,
+                                            password: _password,
+                                            name: _name,
+                                          ),
+                                        );
+                                      }
+                                    },
+                                  );
+                                },
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text(
+                        '¿Ya tienes cuenta? Inicia sesión',
+                        style: TextStyle(color: Colors.grey, fontSize: 14),
+                      ),
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
           ),
         ),
@@ -139,27 +176,34 @@ class _RegisterViewState extends State<RegisterView> {
 // Widget para el campo de entrada del nombre
 class _NameInput extends StatelessWidget {
   final FormFieldSetter<String> onSaved;
-
   const _NameInput({required this.onSaved});
 
   @override
   Widget build(BuildContext context) {
     return TextFormField(
-      // Estilo del texto
-      style: const TextStyle(color: Colors.white),
+      style: const TextStyle(color: _RegisterViewState.textColor),
       decoration: InputDecoration(
-        filled: true,
-        fillColor: _RegisterViewState.cardColor, // Color de fondo del campo
-        labelText: 'Nombre', // Etiqueta del campo
+        labelText: 'Nombre',
         labelStyle: const TextStyle(color: Colors.grey),
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+        filled: true,
+        fillColor: Colors.transparent,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: const BorderSide(color: _RegisterViewState.accentColor),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: const BorderSide(color: _RegisterViewState.accentColor),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: const BorderSide(color: _RegisterViewState.textColor),
+        ),
       ),
-      validator: (value) {
-        // Valida que el nombre no esté vacío
-        if (value == null || value.isEmpty) return 'Campo obligatorio';
-        return null;
-      },
-      onSaved: onSaved, // Guarda el valor ingresado en _name
+      validator:
+          (value) =>
+              value == null || value.isEmpty ? 'Campo obligatorio' : null,
+      onSaved: onSaved,
     );
   }
 }
@@ -167,28 +211,37 @@ class _NameInput extends StatelessWidget {
 // Widget para el campo de entrada del correo electrónico
 class _EmailInput extends StatelessWidget {
   final FormFieldSetter<String> onSaved;
-
   const _EmailInput({required this.onSaved});
 
   @override
   Widget build(BuildContext context) {
     return TextFormField(
-      style: const TextStyle(color: Colors.white),
+      style: const TextStyle(color: _RegisterViewState.textColor),
       decoration: InputDecoration(
-        filled: true,
-        fillColor: _RegisterViewState.cardColor,
         labelText: 'Correo electrónico',
         labelStyle: const TextStyle(color: Colors.grey),
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+        filled: true,
+        fillColor: Colors.transparent,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: const BorderSide(color: _RegisterViewState.accentColor),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: const BorderSide(color: _RegisterViewState.accentColor),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: const BorderSide(color: _RegisterViewState.textColor),
+        ),
       ),
       keyboardType: TextInputType.emailAddress,
       validator: (value) {
-        // Verifica que el campo no esté vacío y contenga un '@'
         if (value == null || value.isEmpty) return 'Campo obligatorio';
         if (!value.contains('@')) return 'Correo inválido';
         return null;
       },
-      onSaved: onSaved, // Guarda el valor ingresado en _email
+      onSaved: onSaved,
     );
   }
 }
@@ -196,27 +249,35 @@ class _EmailInput extends StatelessWidget {
 // Widget para el campo de entrada de la contraseña
 class _PasswordInput extends StatelessWidget {
   final FormFieldSetter<String> onSaved;
-
   const _PasswordInput({required this.onSaved});
 
   @override
   Widget build(BuildContext context) {
     return TextFormField(
-      style: const TextStyle(color: Colors.white),
+      style: const TextStyle(color: _RegisterViewState.textColor),
       decoration: InputDecoration(
-        filled: true,
-        fillColor: _RegisterViewState.cardColor,
         labelText: 'Contraseña',
         labelStyle: const TextStyle(color: Colors.grey),
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+        filled: true,
+        fillColor: Colors.transparent,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: const BorderSide(color: _RegisterViewState.accentColor),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: const BorderSide(color: _RegisterViewState.accentColor),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: const BorderSide(color: _RegisterViewState.textColor),
+        ),
       ),
-      obscureText: true, // Oculta el texto para la contraseña
+      obscureText: true,
       validator: (value) {
         // Valida que la contraseña tenga al menos 6 caracteres
         if (value == null || value.isEmpty) return 'Campo obligatorio';
-        if (value.length < 6) {
-          return 'La contraseña debe tener al menos 6 caracteres';
-        }
+        if (value.length < 6) return 'La contraseña debe tener al menos 6 caracteres';
         return null;
       },
       onSaved: onSaved, // Guarda el valor ingresado en _password
@@ -233,24 +294,35 @@ class _RegisterButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: double.infinity, // Botón de ancho completo
-      child: ElevatedButton(
-        style: ElevatedButton.styleFrom(
-          backgroundColor: _RegisterViewState.accentColor,
-          padding: const EdgeInsets.symmetric(vertical: 15),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 300),
+      child: SizedBox(
+        width: double.infinity,
+        child: ElevatedButton(
+          key: ValueKey(isLoading),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: _RegisterViewState.accentColor,
+            padding: const EdgeInsets.symmetric(vertical: 15),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+            elevation: 2,
           ),
+          onPressed: isLoading ? null : onPressed,
+          child:
+              isLoading
+                  ? const CircularProgressIndicator(
+                    color: _RegisterViewState.textColor,
+                  )
+                  : const Text(
+                    'Registrarse',
+                    style: TextStyle(
+                      color: _RegisterViewState.textColor,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
         ),
-        // Deshabilita el botón si está en proceso de registro
-        onPressed: isLoading ? null : onPressed,
-        child: isLoading
-            ? const CircularProgressIndicator(color: Colors.white)
-            : const Text(
-                'Registrarse',
-                style: TextStyle(color: Colors.white),
-              ),
       ),
     );
   }
