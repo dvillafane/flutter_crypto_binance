@@ -1,17 +1,19 @@
-// Importa los paquetes necesarios
+// Importa los paquetes necesarios de Flutter y otros módulos
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart'; // Para gestión de estado con BLoC
-import 'package:firebase_auth/firebase_auth.dart'; // Para autenticación con Firebase
-import 'package:flutter_crypto_binance/blocs/profile/profile_bloc.dart'; // BLoC de perfil
-import 'package:flutter_crypto_binance/blocs/profile/profile_event.dart'; // Eventos del BLoC
-import 'package:flutter_crypto_binance/blocs/profile/profile_state.dart'; // Estados del BLoC
-import 'package:flutter_crypto_binance/screens/auth_screen/login_screen.dart'; // Pantalla de login
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter_crypto_binance/blocs/profile/profile_bloc.dart';
+import 'package:flutter_crypto_binance/blocs/profile/profile_event.dart';
+import 'package:flutter_crypto_binance/blocs/profile/profile_state.dart';
+import 'package:flutter_crypto_binance/screens/auth_screen/login_screen.dart';
 
-// Pantalla principal del perfil del usuario
+// Widget sin estado para mostrar el perfil del usuario
 class ProfileScreen extends StatelessWidget {
-  const ProfileScreen({super.key});
+  // Indica si el usuario es invitado
+  final bool isGuest;
+  const ProfileScreen({super.key, this.isGuest = false});
 
-  // Colores constantes para usar en toda la pantalla
+  // Colores utilizados en la interfaz
   static const backgroundColor = Color(0xFF121212);
   static const cardColor = Color(0xFF1E1E1E);
   static const accentColor = Color(0xFF424242);
@@ -20,36 +22,73 @@ class ProfileScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Provee el bloc de perfil e inicia el evento LoadProfile al construir
     return BlocProvider(
-      // Crea el BLoC e inicia cargando el perfil
       create: (context) => ProfileBloc()..add(LoadProfile()),
       child: Scaffold(
         appBar: AppBar(
           title: const Text('Tu perfil'),
           backgroundColor: Colors.black,
+          foregroundColor: Colors.white,
         ),
         backgroundColor: backgroundColor,
-        // Escucha cambios en el estado del BLoC
+        // Usa BlocConsumer para manejar estados del bloc
         body: BlocConsumer<ProfileBloc, ProfileState>(
           listener: (context, state) {
-            if (state is ProfileError) {
-              // Muestra error si hay uno
+            // Muestra errores solo si el usuario no es invitado
+            if (state is ProfileError && !isGuest) {
               ScaffoldMessenger.of(
                 context,
               ).showSnackBar(SnackBar(content: Text(state.message)));
             }
           },
           builder: (context, state) {
-            // Muestra un indicador de carga mientras se obtiene el perfil
+            // Si el usuario es invitado, muestra mensaje e invita a iniciar sesión
+            if (isGuest) {
+              return Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Text(
+                      'Inicia sesión para ver tu perfil',
+                      style: TextStyle(color: textColor, fontSize: 18),
+                    ),
+                    const SizedBox(height: 20),
+                    ElevatedButton(
+                      onPressed: () {
+                        // Navega a la pantalla de login y elimina el historial
+                        Navigator.pushAndRemoveUntil(
+                          context,
+                          MaterialPageRoute(builder: (_) => const LoginPage()),
+                          (route) => false,
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: accentColor,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                      child: const Text(
+                        'Iniciar sesión',
+                        style: TextStyle(color: textColor),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }
+
+            // Si el estado es cargando, muestra un indicador de progreso
             if (state is ProfileLoading) {
               return const Center(child: CircularProgressIndicator());
             }
-            // Si el perfil fue cargado exitosamente
+            // Si los datos del perfil fueron cargados correctamente
             else if (state is ProfileLoaded) {
               return SingleChildScrollView(
                 child: Column(
                   children: [
-                    // Encabezado con la foto y datos del usuario
+                    // Contenedor con información visual del perfil
                     Container(
                       color: accentColor,
                       padding: const EdgeInsets.symmetric(vertical: 20),
@@ -59,7 +98,7 @@ class ProfileScreen extends StatelessWidget {
                             Stack(
                               alignment: Alignment.center,
                               children: [
-                                // Muestra la foto del usuario o un ícono por defecto
+                                // Muestra el avatar del usuario
                                 CircleAvatar(
                                   radius: 50,
                                   backgroundImage:
@@ -76,7 +115,7 @@ class ProfileScreen extends StatelessWidget {
                                           )
                                           : null,
                                 ),
-                                // Ícono de cámara superpuesto (decorativo)
+                                // Icono de cámara sobre el avatar
                                 Positioned(
                                   bottom: 0,
                                   right: 0,
@@ -96,7 +135,7 @@ class ProfileScreen extends StatelessWidget {
                               ],
                             ),
                             const SizedBox(height: 10),
-                            // Nombre del usuario
+                            // Muestra el nombre del usuario
                             Text(
                               state.name,
                               style: const TextStyle(
@@ -106,7 +145,7 @@ class ProfileScreen extends StatelessWidget {
                               ),
                             ),
                             const SizedBox(height: 5),
-                            // Correo del usuario
+                            // Muestra el correo del usuario
                             Text(
                               state.email,
                               style: const TextStyle(
@@ -118,12 +157,12 @@ class ProfileScreen extends StatelessWidget {
                         ),
                       ),
                     ),
-                    // Lista de opciones del perfil
+                    // Opciones del perfil: ajustes y cerrar sesión
                     Padding(
                       padding: const EdgeInsets.all(20.0),
                       child: Column(
                         children: [
-                          // Opción "Ajustes" con submenú expandible
+                          // Tarjeta con opciones de ajustes
                           Card(
                             color: cardColor,
                             shape: RoundedRectangleBorder(
@@ -152,14 +191,13 @@ class ProfileScreen extends StatelessWidget {
                               backgroundColor: cardColor,
                               collapsedBackgroundColor: cardColor,
                               children: [
-                                // Opción para restablecer la contraseña
+                                // Opción para restablecer contraseña
                                 ListTile(
                                   title: const Text(
                                     'Restablecer contraseña',
                                     style: TextStyle(color: textColor),
                                   ),
                                   onTap: () {
-                                    // Dispara el evento para enviar el email de recuperación
                                     context.read<ProfileBloc>().add(
                                       SendPasswordResetEmail(),
                                     );
@@ -172,14 +210,14 @@ class ProfileScreen extends StatelessWidget {
                                     );
                                   },
                                 ),
-                                // Opción para eliminar cuenta
+                                // Opción para eliminar cuenta con confirmación
                                 ListTile(
                                   title: const Text(
                                     'Eliminar cuenta',
                                     style: TextStyle(color: Colors.redAccent),
                                   ),
                                   onTap: () async {
-                                    // Diálogo de confirmación antes de eliminar
+                                    // Muestra un diálogo para confirmar eliminación
                                     final shouldDelete = await showDialog<bool>(
                                       context: context,
                                       builder:
@@ -198,6 +236,7 @@ class ProfileScreen extends StatelessWidget {
                                             ),
                                             backgroundColor: cardColor,
                                             actions: [
+                                              // Botón para cancelar
                                               TextButton(
                                                 onPressed:
                                                     () => Navigator.pop(
@@ -211,6 +250,7 @@ class ProfileScreen extends StatelessWidget {
                                                   ),
                                                 ),
                                               ),
+                                              // Botón para confirmar eliminación
                                               TextButton(
                                                 onPressed:
                                                     () => Navigator.pop(
@@ -228,13 +268,12 @@ class ProfileScreen extends StatelessWidget {
                                           ),
                                     );
 
-                                    // Si el usuario confirma, se elimina la cuenta
+                                    // Si el usuario confirmó, elimina cuenta y navega a login
                                     if (shouldDelete == true &&
                                         context.mounted) {
                                       context.read<ProfileBloc>().add(
                                         DeleteAccount(),
                                       );
-                                      // Redirige a la pantalla de login
                                       Navigator.pushAndRemoveUntil(
                                         context,
                                         MaterialPageRoute(
@@ -250,7 +289,7 @@ class ProfileScreen extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(height: 20),
-                          // Botón para cerrar sesión
+                          // Tarjeta para cerrar sesión
                           Card(
                             color: cardColor,
                             shape: RoundedRectangleBorder(
@@ -269,7 +308,7 @@ class ProfileScreen extends StatelessWidget {
                                 ),
                               ),
                               onTap: () {
-                                // Cierra la sesión y redirige al login
+                                // Cierra la sesión de Firebase y navega a login
                                 FirebaseAuth.instance.signOut();
                                 Navigator.pushAndRemoveUntil(
                                   context,
@@ -288,7 +327,7 @@ class ProfileScreen extends StatelessWidget {
                 ),
               );
             }
-            // Si ocurre un error de perfil
+            // Si ocurre un error, muestra el mensaje correspondiente
             else if (state is ProfileError) {
               return Center(
                 child: Text(
@@ -297,8 +336,7 @@ class ProfileScreen extends StatelessWidget {
                 ),
               );
             }
-
-            // Estado por defecto/inicial
+            // Estado por defecto antes de iniciar
             return const Center(
               child: Text(
                 'Estado inicial',

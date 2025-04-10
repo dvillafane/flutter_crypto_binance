@@ -1,4 +1,3 @@
-// Importaciones necesarias
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -8,74 +7,73 @@ import '../services/websocket_prices_service.dart';
 import 'crypto_detail_list_screen.dart';
 import 'profile_screen.dart';
 
-// Definición de la pantalla principal que contendrá la navegación inferior
+// Define un widget con estado llamado HomeScreen
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  // Recibe un parámetro opcional que indica si el usuario es invitado
+  final bool isGuest;
+  const HomeScreen({super.key, this.isGuest = false});
 
-  // Creación del estado asociado a HomeScreen
   @override
   HomeScreenState createState() => HomeScreenState();
 }
 
-// Estado de la pantalla principal donde se gestiona la navegación y los widgets mostrados
+// Clase de estado para HomeScreen
 class HomeScreenState extends State<HomeScreen> {
-  int _selectedIndex =
-      0; // Índice de la pantalla actualmente seleccionada (0: Home, 1: Perfil)
+  // Índice del ítem seleccionado en el BottomNavigationBar
+  int _selectedIndex = 0;
+  // Lista de pantallas que se mostrarán al cambiar de índice
+  late final List<Widget> _screens;
 
-  // Lista de pantallas a mostrar basada en la opción seleccionada en la barra de navegación inferior
-  final List<Widget> _screens = [
-    // Se utiliza un BlocProvider para inyectar la lógica de negocio CryptoBloc en la pantalla de criptomonedas
-    BlocProvider(
-      create:
-          (context) => CryptoBloc(
-            userId:
-                FirebaseAuth
-                    .instance
-                    .currentUser!
-                    .uid, // Se utiliza el UID del usuario autenticado en Firebase
-            cryptoService:
-                CryptoDetailService(), // Servicio para obtener los detalles de criptomonedas
-            pricesService:
-                WebSocketPricesService(), // Servicio para recibir actualizaciones en tiempo real de precios por WebSocket
-          ),
-      child:
-          const CryptoDetailListScreen(), // Pantalla que muestra la lista de criptomonedas
-    ),
-    const ProfileScreen(), // Pantalla de perfil del usuario
-  ];
+  @override
+  void initState() {
+    super.initState();
+    // Inicializa las pantallas con CryptoDetailListScreen y ProfileScreen
+    _screens = [
+      CryptoDetailListScreen(isGuest: widget.isGuest),
+      ProfileScreen(isGuest: widget.isGuest),
+    ];
+  }
 
-  // Método para actualizar la pantalla seleccionada mediante la barra de navegación
+  // Método para actualizar el índice seleccionado
   void _onItemTapped(int index) {
     setState(() {
-      _selectedIndex = index; // Actualiza el índice al que fue tocado
+      _selectedIndex = index;
     });
   }
 
-  // Construcción de la interfaz del widget
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body:
-          _screens[_selectedIndex], // Muestra la pantalla correspondiente al índice seleccionado
-      // Barra de navegación inferior para cambiar entre pantallas
-      bottomNavigationBar: BottomNavigationBar(
-        backgroundColor:
-            Colors.black, // Color de fondo de la barra de navegación
-        selectedItemColor: Colors.white, // Color de los ítems seleccionados
-        unselectedItemColor: Colors.grey, // Color de los ítems no seleccionados
-        currentIndex: _selectedIndex, // Índice actualmente seleccionado
-        onTap:
-            _onItemTapped, // Método que se invoca al tocar un ítem en la barra
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home), // Ícono para la pantalla de inicio
-            label: 'Home', // Etiqueta del ítem
+    // Provee el BLoC de criptomonedas al árbol de widgets
+    return BlocProvider(
+      create:
+          (context) => CryptoBloc(
+            // Si el usuario es invitado, se le asigna un ID genérico "guest"
+            userId:
+                widget.isGuest
+                    ? 'guest'
+                    : FirebaseAuth.instance.currentUser!.uid,
+            // Se inyecta el servicio de detalles de criptomonedas
+            cryptoService: CryptoDetailService(),
+            // Se inyecta el servicio de precios en tiempo real
+            pricesService: WebSocketPricesService(),
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person), // Ícono para la pantalla de perfil
-            label: 'Perfil', // Etiqueta del ítem
-          ),
-        ],
+      child: Scaffold(
+        // Muestra la pantalla correspondiente al índice actual
+        body: _screens[_selectedIndex],
+        // Barra inferior de navegación
+        bottomNavigationBar: BottomNavigationBar(
+          backgroundColor: Colors.black,
+          selectedItemColor: Colors.white,
+          unselectedItemColor: Colors.grey,
+          currentIndex: _selectedIndex,
+          onTap: _onItemTapped, // Llama al método al hacer tap
+          items: const [
+            // Ítem para la pantalla de inicio
+            BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
+            // Ítem para la pantalla de perfil
+            BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Perfil'),
+          ],
+        ),
       ),
     );
   }

@@ -2,7 +2,7 @@ import 'dart:async';
 import 'package:bloc/bloc.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter_crypto_binance/models/crypto_detail.dart';
+import '/models/crypto_detail.dart';
 import '/services/crypto_detail_service.dart';
 import '/services/websocket_prices_service.dart';
 import 'crypto_event.dart';
@@ -16,6 +16,7 @@ class CryptoBloc extends Bloc<CryptoEvent, CryptoState> {
   final CryptoDetailService _cryptoService;
   final WebSocketPricesService _pricesService;
   final String userId;
+  final bool isGuest;
 
   final Map<String, double> _previousPrices = {};
 
@@ -31,6 +32,7 @@ class CryptoBloc extends Bloc<CryptoEvent, CryptoState> {
     required WebSocketPricesService pricesService,
   })  : _cryptoService = cryptoService,
         _pricesService = pricesService,
+        isGuest = userId == 'guest',
         super(CryptoLoading()) {
     // Registramos los handlers de eventos
     on<LoadCryptos>(_onLoadCryptos);
@@ -88,6 +90,7 @@ class CryptoBloc extends Bloc<CryptoEvent, CryptoState> {
   }
 
   Future<Set<String>> _loadFavoriteSymbols(String userId) async {
+    if (isGuest) return {};
     final doc = await FirebaseFirestore.instance.collection('users').doc(userId).get();
     if (doc.exists) {
       final data = doc.data();
@@ -100,6 +103,7 @@ class CryptoBloc extends Bloc<CryptoEvent, CryptoState> {
 
   // Función para guardar las favoritas en Firestore
   Future<void> _saveFavoriteSymbols(String userId, Set<String> favorites) async {
+    if (isGuest) return;
     await FirebaseFirestore.instance.collection('users').doc(userId).set({
       'favorites': favorites.toList(),
     }, SetOptions(merge: true));
@@ -128,7 +132,13 @@ class CryptoBloc extends Bloc<CryptoEvent, CryptoState> {
       _pricesService.connect();
       _pricesSubscription = _pricesService.pricesStream.listen(
         (prices) => add(PricesUpdated(prices: prices)),
-        onError: (error) => add(DisconnectWebSocket()),
+        onError: (error) {
+          debugPrint('Error en la suscripción al WebSocket: $error');
+          add(DisconnectWebSocket());
+        },
+        onDone: () {
+          debugPrint('Suscripción al WebSocket finalizada');
+        },
       );
 
       final favoriteSymbols = await _loadFavoriteSymbols(userId);
@@ -230,7 +240,13 @@ class CryptoBloc extends Bloc<CryptoEvent, CryptoState> {
         _pricesService.connect();
         _pricesSubscription = _pricesService.pricesStream.listen(
           (prices) => add(PricesUpdated(prices: prices)),
-          onError: (error) => add(DisconnectWebSocket()),
+          onError: (error) {
+            debugPrint('Error en la suscripción al WebSocket: $error');
+            add(DisconnectWebSocket());
+          },
+          onDone: () {
+            debugPrint('Suscripción al WebSocket finalizada');
+          },
         );
         emit(currentState.copyWith(isWebSocketConnected: true));
       } catch (e) {
@@ -243,12 +259,15 @@ class CryptoBloc extends Bloc<CryptoEvent, CryptoState> {
     final currentState = state;
     if (currentState is CryptoLoaded && currentState.isWebSocketConnected) {
       _pricesSubscription?.cancel();
+      _pricesSubscription = null; // Limpia la referencia
       _pricesService.disconnect();
+      debugPrint('Desconectando WebSocket desde el BLoC');
       emit(currentState.copyWith(isWebSocketConnected: false));
     }
   }
 
   void _onToggleFavoriteSymbol(ToggleFavoriteSymbol event, Emitter<CryptoState> emit) {
+    if (isGuest) return;
     final currentState = state;
     if (currentState is CryptoLoaded) {
       final favs = Set<String>.from(currentState.favoriteSymbols);
@@ -312,8 +331,10 @@ class CryptoBloc extends Bloc<CryptoEvent, CryptoState> {
   @override
   Future<void> close() {
     _pricesSubscription?.cancel();
+    _pricesSubscription = null;
     _pricesService.dispose();
     _updateTimer?.cancel();
+    debugPrint('CryptoBloc cerrado');
     return super.close();
   }
 }
