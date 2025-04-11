@@ -1,6 +1,6 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
-import '/models/crypto_detail.dart';
+import '../../../core/models/crypto_detail.dart';
 
 /// ----------------------------
 /// 2. DEFINICIÓN DE ESTADOS

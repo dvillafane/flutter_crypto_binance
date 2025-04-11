@@ -1,7 +1,7 @@
 // Importa el paquete de Flutter para construir interfaces gráficas.
 import 'package:flutter/material.dart';
 // Importa el modelo de criptomoneda para utilizar sus propiedades.
-import '../models/crypto.dart';
+import '../../core/models/crypto.dart';
 
 /// Widget que representa una tarjeta con los detalles básicos de una criptomoneda.
 /// Permite manejar toques (tap) mediante una función de callback.

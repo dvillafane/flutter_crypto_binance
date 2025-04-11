@@ -2,9 +2,9 @@ import 'dart:async';
 import 'package:bloc/bloc.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '/models/crypto_detail.dart';
-import '/services/crypto_detail_service.dart';
-import '/services/websocket_prices_service.dart';
+import '../../../core/models/crypto_detail.dart';
+import '../../../core/services/crypto_detail_service.dart';
+import '../../../core/services/websocket_prices_service.dart';
 import 'crypto_event.dart';
 import 'crypto_state.dart';
 

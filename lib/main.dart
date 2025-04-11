@@ -5,10 +5,10 @@ import 'package:flutter_crypto_binance/firebase_options.dart'; // Configuración
 import 'package:flutter_dotenv/flutter_dotenv.dart'; // Permite cargar variables de entorno desde un archivo .env.
 import 'package:firebase_auth/firebase_auth.dart'; // Proporciona funcionalidades de autenticación de Firebase.
 import 'package:firebase_messaging/firebase_messaging.dart'; // Permite manejar notificaciones push con FCM.
-import 'services/noti_service.dart'; // Archivo donde está configurado el handler de notificaciones en background.
-import 'services/token_service.dart'; // Servicios para manejar y registrar tokens de FCM y FID.
-import 'screens/auth_screen/login_screen.dart'; // Pantalla de login.
-import 'screens/home_screen.dart'; // Pantalla principal después del login.
+import 'core/services/noti_service.dart'; // Archivo donde está configurado el handler de notificaciones en background.
+import 'core/services/token_service.dart'; // Servicios para manejar y registrar tokens de FCM y FID.
+import 'features/auth/login/view/login_screen.dart'; // Pantalla de login.
+import 'features/home/view/home_screen.dart'; // Pantalla principal después del login.
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized(); // Asegura que se haya inicializado Flutter antes de ejecutar código async.

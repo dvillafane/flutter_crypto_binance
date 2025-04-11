@@ -3,15 +3,15 @@ import 'package:flutter/material.dart';
 // Importa Flutter Bloc para el manejo del estado con el patrón Bloc.
 import 'package:flutter_bloc/flutter_bloc.dart';
 // Importa la pantalla de inicio (HomeScreen) para navegación tras login exitoso.
-import 'package:flutter_crypto_binance/screens/home_screen.dart';
+import 'package:flutter_crypto_binance/features/home/view/home_screen.dart';
 // Importa la pantalla de registro para crear una cuenta.
-import 'package:flutter_crypto_binance/screens/auth_screen/register_screen.dart';
+import 'package:flutter_crypto_binance/features/auth/register/view/register_screen.dart';
 // Importa un botón diseñado para iniciar sesión con Google.
 import 'package:sign_button/sign_button.dart'; // Botón de inicio de sesión con Google.
 // Importa la pantalla para recuperar la contraseña.
-import 'forgot_password_screen.dart';
+import '../../forgot_password/view/forgot_password_screen.dart';
 // Importa el Bloc de login para gestionar eventos y estados durante el proceso de inicio de sesión.
-import '../../blocs/login/login_bloc.dart'; // BLoC para manejar el estado del login
+import '../bloc/login_bloc.dart'; // BLoC para manejar el estado del login
 
 // Clase principal de la pantalla de login sin estado (StatelessWidget)
 class LoginPage extends StatelessWidget {

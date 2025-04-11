@@ -1,7 +1,7 @@
 // Importa el paquete de Flutter para widgets y estilos
 import 'package:flutter/material.dart';
 // Importa el modelo que representa los detalles de una criptomoneda
-import '../models/crypto_detail.dart';
+import '../../core/models/crypto_detail.dart';
 
 /// Widget sin estado (StatelessWidget) que muestra una tarjeta con la información de una criptomoneda
 class CryptoCard extends StatelessWidget {
