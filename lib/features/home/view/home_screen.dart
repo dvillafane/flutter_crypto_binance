@@ -1,11 +1,11 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../blocs/crypto/crypto_bloc.dart';
-import '../services/crypto_detail_service.dart';
-import '../services/websocket_prices_service.dart';
-import 'crypto_detail_list_screen.dart';
-import 'profile_screen.dart';
+import '../../crypto/bloc/crypto_bloc.dart';
+import '../../../core/services/crypto_detail_service.dart';
+import '../../../core/services/websocket_prices_service.dart';
+import '../../crypto/view/crypto_detail_list_screen.dart';
+import '../../profile/view/profile_screen.dart';
 
 // Define un widget con estado llamado HomeScreen
 class HomeScreen extends StatefulWidget {

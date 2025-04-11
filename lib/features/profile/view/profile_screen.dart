@@ -2,10 +2,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter_crypto_binance/blocs/profile/profile_bloc.dart';
-import 'package:flutter_crypto_binance/blocs/profile/profile_event.dart';
-import 'package:flutter_crypto_binance/blocs/profile/profile_state.dart';
-import 'package:flutter_crypto_binance/screens/auth_screen/login_screen.dart';
+import 'package:flutter_crypto_binance/features/profile/bloc/profile_bloc.dart';
+import 'package:flutter_crypto_binance/features/profile/bloc/profile_event.dart';
+import 'package:flutter_crypto_binance/features/profile/bloc/profile_state.dart';
+import 'package:flutter_crypto_binance/features/auth/login/view/login_screen.dart';
 
 // Widget sin estado para mostrar el perfil del usuario
 class ProfileScreen extends StatelessWidget {

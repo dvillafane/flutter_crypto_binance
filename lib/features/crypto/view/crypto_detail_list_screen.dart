@@ -1,11 +1,11 @@
 import 'dart:async';
 import 'package:flutter/material.dart'; 
 import 'package:flutter_bloc/flutter_bloc.dart'; 
-import 'package:flutter_crypto_binance/blocs/crypto/crypto_event.dart'; 
-import 'package:flutter_crypto_binance/blocs/crypto/crypto_state.dart'; 
+import 'package:flutter_crypto_binance/features/crypto/bloc/crypto_event.dart'; 
+import 'package:flutter_crypto_binance/features/crypto/bloc/crypto_state.dart'; 
 import 'package:intl/intl.dart'; 
-import '../blocs/crypto/crypto_bloc.dart';
-import '../models/crypto_detail.dart'; 
+import '../bloc/crypto_bloc.dart';
+import '../../../core/models/crypto_detail.dart'; 
 
 class CryptoDetailListScreen extends StatefulWidget {
   final bool isGuest; // Indica si el usuario es invitado
