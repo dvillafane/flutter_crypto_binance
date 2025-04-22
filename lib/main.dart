@@ -1,140 +1,130 @@
-import 'package:firebase_core/firebase_core.dart'; // Inicializa Firebase en la app.
-import 'package:flutter/material.dart'; // Librería principal para construir interfaces en Flutter.
-import 'package:flutter/services.dart'; // Permite controlar configuraciones del sistema, como la orientación.
-import 'package:flutter_crypto_binance/firebase_options.dart'; // Configuración específica de Firebase para esta plataforma.
-import 'package:flutter_dotenv/flutter_dotenv.dart'; // Permite cargar variables de entorno desde un archivo .env.
-import 'package:firebase_auth/firebase_auth.dart'; // Proporciona funcionalidades de autenticación de Firebase.
-import 'package:firebase_messaging/firebase_messaging.dart'; // Permite manejar notificaciones push con FCM.
-import 'core/services/noti_service.dart'; // Archivo donde está configurado el handler de notificaciones en background.
-import 'core/services/token_service.dart'; // Servicios para manejar y registrar tokens de FCM y FID.
-import 'features/auth/login/view/login_screen.dart'; // Pantalla de login.
-import 'features/home/view/home_screen.dart'; // Pantalla principal después del login.
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_crypto_binance/firebase_options.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'core/services/noti_service.dart';
+import 'core/services/token_service.dart';
+import 'features/auth/login/view/login_screen.dart';
+import 'features/home/view/home_screen.dart';
 
 Future<void> main() async {
-  WidgetsFlutterBinding.ensureInitialized(); // Asegura que se haya inicializado Flutter antes de ejecutar código async.
+  WidgetsFlutterBinding.ensureInitialized();
 
-  // Carga el archivo .env con las variables de entorno
   try {
-    await dotenv.load(
-      fileName: ".env",
-    ); // Intenta cargar las variables de entorno desde el archivo .env.
+    await dotenv.load(fileName: ".env");
   } catch (e) {
-    debugPrint(
-      "Error al cargar el archivo .env: $e",
-    ); // Muestra un mensaje si ocurre un error cargando .env.
+    debugPrint("Error al cargar el archivo .env: $e");
   }
 
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  // Inicializa Firebase con la configuración para la plataforma actual.
 
-  await initializeNotifications(); // Llama a la función para configurar las notificaciones.
+  if (!kIsWeb) {
+    // Inicializar notificaciones solo en plataformas móviles
+    await initializeNotifications();
+    FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
+  }
 
-  // Registra correctamente el handler de mensajes en segundo plano.
-  FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
-  // Registra el handler para notificaciones cuando la app está en segundo plano.
+  // Configurar orientación solo en plataformas móviles
+  if (!kIsWeb) {
+    await SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.portraitDown,
+    ]);
+  }
 
-  SystemChrome.setPreferredOrientations([
-    DeviceOrientation.portraitUp,
-    DeviceOrientation.portraitDown,
-  ]).then((_) {
-    // Define que la app solo funcione en orientación vertical (arriba y abajo).
-    runApp(const MyApp()); // Lanza la aplicación.
-  });
+  runApp(const MyApp());
 }
 
 class MyApp extends StatefulWidget {
-  const MyApp({super.key}); // Constructor de la clase MyApp.
+  const MyApp({super.key});
+
   @override
-  State<MyApp> createState() => _MyAppState(); // Crea el estado asociado a esta clase.
+  State<MyApp> createState() => _MyAppState();
 }
 
 class _MyAppState extends State<MyApp> {
   @override
   void initState() {
-    super.initState(); // Llama al initState de la clase padre.
+    super.initState();
+    if (!kIsWeb) {
+      // Configurar notificaciones y tokens solo en plataformas móviles
+      obtenerYEnviarTokenFCM();
+      obtenerYEnviarFID();
+      listenTokenRefresh();
+      setupNotificationListeners();
+    } else {
+      // Configurar Firebase Messaging para la web
+      setupWebMessaging();
+    }
+  }
 
-    obtenerYEnviarTokenFCM(); // Obtiene y envía el token de Firebase Cloud Messaging.
-    obtenerYEnviarFID(); // Obtiene y envía el Firebase Installation ID.
-    listenTokenRefresh(); // Escucha actualizaciones del token de FCM.
-    setupNotificationListeners(); // Configura listeners para notificaciones en primer plano y clics.
+  void setupWebMessaging() async {
+    final messaging = FirebaseMessaging.instance;
+    // Solicitar permisos para notificaciones en la web
+    await messaging.requestPermission(
+      alert: true,
+      badge: true,
+      sound: true,
+    );
+    // Obtener y enviar token en la web
+    String? token = await messaging.getToken();
+    if (token != null) {
+      debugPrint('Web FCM Token: $token');
+      await enviarTokenAFirestore(token);
+    }
+    // Escuchar renovaciones de token
+    messaging.onTokenRefresh.listen((newToken) async {
+      debugPrint('Web FCM Token renovado: $newToken');
+      await enviarTokenAFirestore(newToken);
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      // Título de la app (se usa en algunos dispositivos al cambiar entre apps)
       title: 'Cyptos 2.0 Demo',
-
-      // Define el tema visual general de la app
       theme: ThemeData(
-        brightness: Brightness.dark, // Establece un tema oscuro.
-        primaryColor: Colors.black, // Color primario de la app.
-        scaffoldBackgroundColor:
-            Colors.black, // Color de fondo de las pantallas principales.
-        // Tema para la AppBar (barra superior)
+        brightness: Brightness.dark,
+        primaryColor: Colors.black,
+        scaffoldBackgroundColor: Colors.black,
         appBarTheme: const AppBarTheme(
-          backgroundColor: Colors.black, // Fondo negro para la AppBar.
-          titleTextStyle: TextStyle(
-            color: Colors.white,
-            fontSize: 20,
-          ), // Estilo del título.
+          backgroundColor: Colors.black,
+          titleTextStyle: TextStyle(color: Colors.white, fontSize: 20),
         ),
         textTheme: const TextTheme(
-          bodyMedium: TextStyle(
-            color: Colors.white,
-          ), // Estilo del texto principal.
-          bodySmall: TextStyle(
-            color: Colors.white70,
-          ), // Estilo del texto secundario.
+          bodyMedium: TextStyle(color: Colors.white),
+          bodySmall: TextStyle(color: Colors.white70),
         ),
-
-        // Tema visual para las tarjetas (Cards)
-        cardTheme: CardTheme(
-          color: Colors.grey[900],
-          elevation: 4,
-        ), // Estilo de las cards.
-        // Tema visual para diálogos (AlertDialog, etc.)
+        cardTheme: CardTheme(color: Colors.grey[900], elevation: 4),
         dialogTheme: const DialogTheme(
-          titleTextStyle: TextStyle(
-            color: Colors.white,
-            fontSize: 18,
-          ), // Título del diálogo.
-          contentTextStyle: TextStyle(
-            color: Colors.white70,
-          ), // Contenido del diálogo.
+          titleTextStyle: TextStyle(color: Colors.white, fontSize: 18),
+          contentTextStyle: TextStyle(color: Colors.white70),
         ),
-
-        // Usa Material 3 (diseño más moderno)
         useMaterial3: true,
       ),
-      home:
-          const AuthCheck(), // Define el widget principal que se mostrará: AuthCheck.
+      home: const AuthCheck(),
     );
   }
 }
 
 class AuthCheck extends StatelessWidget {
-  const AuthCheck({super.key}); // Constructor de AuthCheck.
+  const AuthCheck({super.key});
 
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<User?>(
       stream: FirebaseAuth.instance.authStateChanges(),
-
-      // Escucha los cambios en el estado de autenticación del usuario.
       builder: (context, snapshot) {
-        // Mientras se verifica el estado, muestra un indicador de carga
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Scaffold(
-            body: Center(
-              child: CircularProgressIndicator(),
-            ), // Indicador de carga.
+            body: Center(child: CircularProgressIndicator()),
           );
         }
-
-        return snapshot.hasData
-            ? const HomeScreen() // Si hay un usuario autenticado, muestra la pantalla principal.
-            : const LoginPage(); // Si no hay usuario autenticado, muestra la pantalla de login.
+        return snapshot.hasData ? const HomeScreen() : const LoginPage();
       },
     );
   }

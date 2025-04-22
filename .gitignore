@@ -43,6 +43,13 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+/node_modules
+
+# Excluir archivo de entorno
+.env
+
+# Excluir archivos de configuración de Firebase con credenciales reales
 lib/firebase_options.dart
 /android/app/google-services.json
-.env
+web/index.html
+web/firebase-messaging-sw.js
